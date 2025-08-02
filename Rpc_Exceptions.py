@@ -18,3 +18,9 @@ class RpcBinderRequestException(RpcException):
     def __init__(self, message, code=None):
         self.code = code
         self.message = message
+        
+class RpcProcUnvailException(RpcException):
+    """The program cannot support the requested procedure."""
+    def __init__(self, message, code=None):
+        self.code = code
+        self.message = message
