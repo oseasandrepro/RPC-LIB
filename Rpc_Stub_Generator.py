@@ -212,7 +212,7 @@ import socket
 import os
 from Rpc_Serializer import RpcSerializer
 from Rpc_Client_Binder import RpcClientBinder
-from Rpc_Exceptions import RpcCallException, RpcTransportException
+from Rpc_Exceptions import RpcCallException, RpcTransportException, RpcProcUnvailException
 from interface.Rpc_Client_Stub_Interface import RpcClientStubInterface
 
 from {interface_file_name.split('.')[0]} import {interface_name}
