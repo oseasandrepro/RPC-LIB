@@ -1,7 +1,7 @@
 import pickle
-from interface.Rpc_Serializer_Interface import RpcSerializerInterface
+from interface.srpc_serializer_interface import SrpcSerializerInterface
 
-class RpcSerializer(RpcSerializerInterface):
+class SrpcSerializer(SrpcSerializerInterface):
     def serialize(self, data):
         return pickle.dumps(data)
     

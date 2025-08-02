@@ -1,12 +1,12 @@
-from Rpc_Serializer import RpcSerializer
-from interface.Rpc_Client_Binder_Interface import RpcServerBinderInterface
+from util.srpc_serializer import SrpcSerializer
+from interface.srpc_client_binder_interface import SrpcClientBinderInterface
 import socket
-from Rpc_Exceptions import RpcBinderRequestException
+from srpc_exceptions import RpcBinderRequestException
 import os
 
-class RpcClientBinder(RpcServerBinderInterface):
+class RpcClientBinder(SrpcClientBinderInterface):
     def __init__(self, host="0.0.0.0"):
-        self.__serializer = RpcSerializer()
+        self.__serializer = SrpcSerializer()
         self.__host = host
         self.__BINDER_PORT = 5000
 

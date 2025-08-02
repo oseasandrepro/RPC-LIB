@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class RpcServerBinderInterface(ABC):
+class SrpcServerBinderInterface(ABC):
 
     @abstractmethod
     def start_binder(self):

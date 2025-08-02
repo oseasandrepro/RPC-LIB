@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class RpcServerStubInterface(ABC):
+class SrpcServerStubInterface(ABC):
 
     @abstractmethod
     def stop(self):

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class RpcServerBinderInterface(ABC):
+class SrpcClientBinderInterface(ABC):
 
     @abstractmethod
     def binding_lookup(self):

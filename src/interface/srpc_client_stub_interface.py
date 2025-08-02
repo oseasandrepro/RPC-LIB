@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class RpcClientStubInterface(ABC):
+class SrpcClientStubInterface(ABC):
 
     @abstractmethod
     def remote_call(self, func_name, parameters: tuple):

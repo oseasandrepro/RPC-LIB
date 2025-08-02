@@ -1,15 +1,15 @@
 import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from Rpc_Serializer import RpcSerializer
-from interface.Rpc_Server_Binder_Interface import RpcServerBinderInterface
+from util.srpc_serializer import SrpcSerializer
+from interface.srpc_server_binder_interface import SrpcServerBinderInterface
 
-class RpcServerBinder(RpcServerBinderInterface):
+class SrpcServerBinder(SrpcServerBinderInterface):
     def __init__(self, host='0.0.0.0'):
         self.__host = host
         self.__BINDER_PORT = 5000
         self.__total_lookup_request = 0
-        self.__serializer = RpcSerializer()
+        self.__serializer = SrpcSerializer()
         self.__functions = {}
         self.__shutdown_event = threading.Event()
         self.__binder_socket = None

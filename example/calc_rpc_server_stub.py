@@ -1,22 +1,20 @@
-from Rpc_Serializer import RpcSerializer
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import ThreadPoolExecutor
 
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 import socket
 import threading
 import inspect
-import random
 import time
 import os
 
+from util.srpc_serializer import SrpcSerializer
+from srpc_exceptions import RpcBinderRequestException, RpcProcUnvailException
+from interface.srpc_server_stub_interface import SrpcServerStubInterface
 
-from Rpc_Exceptions import RpcBinderRequestException
-from interface.Rpc_Server_Sub_Interface import RpcServerStubInterface
+from calc_interface import CalcInterface
+from calc import Calc
 
-from Calculadora_Interface import CalculadoraInterface
-from Calculadora import Calculadora
-
-class RpcServerStub(RpcServerStubInterface):
+class RpcServerStub(SrpcServerStubInterface):
 
     def __init__(self, host='0.0.0.0'):
         self.__BINDER_PORT = 5000
@@ -25,13 +23,13 @@ class RpcServerStub(RpcServerStubInterface):
         self.__executor = ThreadPoolExecutor(max_workers=10)
         self.__threads = []
         self.__stop_event = threading.Event()
-        self.__serializer = RpcSerializer()
-        self.__lib_procedures = Calculadora()
-        self.__check_implements_interface(self.__lib_procedures, CalculadoraInterface)
+        self.__serializer = SrpcSerializer()
+        self.__lib_procedures = Calc()
+        self.__check_implements_interface(self.__lib_procedures, CalcInterface)
 
 
     def __get_lib_procedures_name(self):
-        return [name for name, member in inspect.getmembers(CalculadoraInterface, predicate=inspect.isfunction)]
+        return [name for name, member in inspect.getmembers(CalcInterface, predicate=inspect.isfunction)]
     
     def __check_implements_interface(self, obj, interface):
         if not isinstance(obj, interface):
@@ -72,12 +70,6 @@ class RpcServerStub(RpcServerStubInterface):
             print("Mission aborted. Exiting.")
             os._exit(1)
         
-    def __gen_random_port_number(self):
-        port = random.randint(1029, 48657)
-        while port in [5000] :
-            port = random.randint(1029, 48657)
-
-        return port
 
     def __handle_request(self, func_name, conn, addr):
         with conn:
@@ -90,7 +82,7 @@ class RpcServerStub(RpcServerStubInterface):
                     result = self.__call_func(request_tuple)
                     response = ("200", "", result)
                 else:
-                    response = ("400", "Invalid function name or format", None)
+                    raise RpcProcUnvailException("The program cannot support the requested procedure.")
             except Exception as e:
                 print(f"func [{func_name}] call error: {e}")
                 response = ("500", str(e), type(e).__name__)
@@ -98,11 +90,11 @@ class RpcServerStub(RpcServerStubInterface):
                 conn.sendall( self.__serializer.serialize(response))
                 
     def __listen_for_func(self, func_name, ponte):
-        port = self.__gen_random_port_number()
-        self.__register_func_in_binder(func_name, port)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((self.__host, port))
+            s.bind((self.__host, 0))
+            port = s.getsockname()[1]
+            self.__register_func_in_binder(func_name, port)
             s.listen()
             s.settimeout(1.0)
             
@@ -115,7 +107,6 @@ class RpcServerStub(RpcServerStubInterface):
                     continue
                 except Exception as e:
                     print(f"[{port}] Listener error: {e}")
-
 
     def start(self):
         time.sleep(2)

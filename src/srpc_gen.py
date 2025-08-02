@@ -4,6 +4,8 @@ import os
 import inspect
 from abc import ABC
 
+DEFAULT_BINDER_PORT = 5000
+
 def load_module_from_path(path: str, module_name: str = "dynamic_interface"):
     spec = importlib.util.spec_from_file_location(module_name, path)
     module = importlib.util.module_from_spec(spec)
@@ -65,35 +67,34 @@ def build_param_tuple(params: list[str]) -> str:
 
 def gen_server_stub(interface_file_name, interface_name):
     server_module_name = interface_file_name.split('_')[0]
+    server_class_name = server_module_name[0].upper() + server_module_name[1:]
     code = f'''
-from Rpc_Serializer import RpcSerializer
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
-
 import socket
 import threading
 import inspect
 import time
 import os
 
-
-from Rpc_Exceptions import RpcBinderRequestException, RpcProcUnvailException
-from interface.Rpc_Server_Sub_Interface import RpcServerStubInterface
+from util.srpc_serializer import SrpcSerializer
+from srpc_exceptions import RpcBinderRequestException, RpcProcUnvailException
+from interface.srpc_server_stub_interface import SrpcServerStubInterface
 
 from {interface_file_name.split('.')[0]} import {interface_name}
-from {server_module_name} import {server_module_name}
+from {server_module_name} import {server_class_name}
 
-class RpcServerStub(RpcServerStubInterface):
+class RpcServerStub(SrpcServerStubInterface):
 
     def __init__(self, host='0.0.0.0'):
-        self.__BINDER_PORT = 5000
+        self.__BINDER_PORT = DEFAULT_BINDER_PORT
         self.__lib_procedures_name = self.__get_lib_procedures_name()
         self.__host = host
         self.__executor = ThreadPoolExecutor(max_workers=10)
         self.__threads = []
         self.__stop_event = threading.Event()
-        self.__serializer = RpcSerializer()
-        self.__lib_procedures = {server_module_name}()
+        self.__serializer = SrpcSerializer()
+        self.__lib_procedures = {server_class_name}()
         self.__check_implements_interface(self.__lib_procedures, {interface_name})
 
 
@@ -210,17 +211,17 @@ def gen_client_stub(interface_file_name, interface_name, dictionary_of_methods: 
     code = f"""
 import socket
 import os
-from Rpc_Serializer import RpcSerializer
-from Rpc_Client_Binder import RpcClientBinder
-from Rpc_Exceptions import RpcCallException, RpcTransportException, RpcProcUnvailException
-from interface.Rpc_Client_Stub_Interface import RpcClientStubInterface
+from util.srpc_serializer import SrpcSerializer
+from binder.srpc_client_binder import RpcClientBinder
+from srpc_exceptions import RpcCallException, RpcTransportException, RpcProcUnvailException
+from interface.srpc_client_stub_interface import SrpcClientStubInterface
 
 from {interface_file_name.split('.')[0]} import {interface_name}
 
-class _RpcClientStub(RpcClientStubInterface):
+class _RpcClientStub(SrpcClientStubInterface):
 
     def __init__(self):
-        self.__serializer = RpcSerializer()
+        self.__serializer = SrpcSerializer()
         self.__HOST = "{host}"
         self.__functions = {{}}
         self.__bind()
@@ -256,7 +257,7 @@ class _RpcClientStub(RpcClientStubInterface):
             print("Mission aborted. Exiting.")
             os._exit(1)
 """+f"""
-class {module_name}_Stub({interface_name}):
+class {module_name}_stub({interface_name}):
     def __init__(self):
         self.__client_stub = _RpcClientStub()
 """
@@ -285,11 +286,11 @@ class {module_name}_Stub({interface_name}):
     with open(f"{stub_file_name}", "w") as f:
         f.write(code)
     print(f"client stub generated: {stub_file_name}")
-    print(f"you should import {module_name}_Stub from {stub_file_name} to call the procedures")
+    print(f"you should import {module_name}_stub from {stub_file_name} to call the procedures")
 
      
 
-BINDER_PORT = 5000
+BINDER_PORT = DEFAULT_BINDER_PORT
 path = input("get the interface path: ")
 host = input("server IP-address: ")
 

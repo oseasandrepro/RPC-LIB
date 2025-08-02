@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class RpcSerializerInterface(ABC):
+class SrpcSerializerInterface(ABC):
 
     @abstractmethod
     def serialize(self, data):
