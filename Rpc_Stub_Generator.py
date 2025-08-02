@@ -152,7 +152,7 @@ class RpcServerStub(RpcServerStubInterface):
                     result = self.__call_func(request_tuple)
                     response = ("200", "", result)
                 else:
-                    response = ("400", "Invalid function name or format", None)
+                    raise RpcProcUnvailException("The program cannot support the requested procedure.")
             except Exception as e:
                 print(f"func [{{func_name}}] call error: {{e}}")
                 response = ("500", str(e), type(e).__name__)
