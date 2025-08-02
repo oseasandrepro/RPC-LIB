@@ -73,12 +73,11 @@ from concurrent.futures import ThreadPoolExecutor
 import socket
 import threading
 import inspect
-import random
 import time
 import os
 
 
-from Rpc_Exceptions import RpcBinderRequestException
+from Rpc_Exceptions import RpcBinderRequestException, RpcProcUnvailException
 from interface.Rpc_Server_Sub_Interface import RpcServerStubInterface
 
 from {interface_file_name.split('.')[0]} import {interface_name}
