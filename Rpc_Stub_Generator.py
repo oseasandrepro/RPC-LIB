@@ -140,12 +140,6 @@ class RpcServerStub(RpcServerStubInterface):
             print("Mission aborted. Exiting.")
             os._exit(1)
         
-    def __gen_random_port_number(self):
-        port = random.randint(1029, 48657)
-        while port in [5000] :
-            port = random.randint(1029, 48657)
-
-        return port
 
     def __handle_request(self, func_name, conn, addr):
         with conn:
@@ -166,11 +160,11 @@ class RpcServerStub(RpcServerStubInterface):
                 conn.sendall( self.__serializer.serialize(response))
                 
     def __listen_for_func(self, func_name, ponte):
-        port = self.__gen_random_port_number()
-        self.__register_func_in_binder(func_name, port)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((self.__host, port))
+            s.bind((self.__host, 0))
+            port = s.getsockname()[1]
+            self.__register_func_in_binder(func_name, port)
             s.listen()
             s.settimeout(1.0)
             
