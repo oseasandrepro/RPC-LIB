@@ -13,11 +13,8 @@ def configure_logging():
 
 if __name__ == "__main__":
     configure_logging()
-    #path = input("get the interface path: ")
-    #host = input("server IP-address: ")
-
-    file_path = "C:\\Users\\oseas\\OneDrive\\Documentos\\Sistemas-distribuidos\\RPC-LIB\\example\\calc_interface.py"
-    host = "192.168.0.75"
+    file_path = input("get the interface path: ")
+    server_host = input("server IP-address: ")
 
     module = stub_util.load_module_from_path(file_path)
     interface = stub_util.get_interface_from_module(module)
@@ -26,5 +23,5 @@ if __name__ == "__main__":
 
     client_stub_gen.gen_client_stub(file_name, interface_name, 
                                     stub_util.get_methodname_signature_map_from_interface(interface), 
-                                    host)
+                                    server_host)
     server_stub_gen.gen_server_stub(file_name, interface_name)
