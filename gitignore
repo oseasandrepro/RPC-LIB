@@ -1,4 +1,4 @@
-examples/
+example/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -6,7 +6,7 @@ __pycache__/
 *$py.class
 
 # C extensions
-*.so
+*.c
 
 # Distribution / packaging
 .Python
