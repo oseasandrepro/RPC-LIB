@@ -8,7 +8,6 @@ def gen_server_stub(interface_file_name, interface_name):
     server_class_name = server_module_name[0].upper() + server_module_name[1:]
     code = f'''
 from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import ThreadPoolExecutor
 import socket
 import threading
 import inspect
@@ -18,6 +17,7 @@ import os
 from util.srpc_serializer import SrpcSerializer
 from srpc_exceptions import RpcBinderRequestException, RpcProcUnvailException
 from interface.srpc_server_stub_interface import SrpcServerStubInterface
+import logging
 
 from {interface_file_name.split('.')[0]} import {interface_name}
 from {server_module_name} import {server_class_name}
@@ -34,6 +34,11 @@ class RpcServerStub(SrpcServerStubInterface):
         self.__serializer = SrpcSerializer()
         self.__lib_procedures = {server_class_name}()
         self.__check_implements_interface(self.__lib_procedures, {interface_name})
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s : %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S")
 
 
     def __get_lib_procedures_name(self):
@@ -41,7 +46,9 @@ class RpcServerStub(SrpcServerStubInterface):
     
     def __check_implements_interface(self, obj, interface):
         if not isinstance(obj, interface):
-            raise TypeError(f"Object of type {{type(obj).__name__}} must implement interface {{interface.__name__}}")
+            logging.error(f"Object of type {{type(obj).__name__}} must implement interface {{interface.__name__}}")
+            self.logger.error("Mission aborted.")
+            os._exit(1)
         
     def __call_func(self, t: tuple):
         try:
@@ -63,19 +70,17 @@ class RpcServerStub(SrpcServerStubInterface):
             
             if deserialized_response[0] != "200":
                 raise RpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
-            else:
-                print(f"func [{{func_name}}] in port [{{port}}] Listening...")
 
             socket_cli.close()      
         except socket.timeout:
-            raise ("Timeout occurred during RPC bind.")
+            self.logger.error(f"Timeout occurred during RPC bind for function [{{func_name}}].")
         except OSError as e:
-            print(f"an error occurred during function [{{func_name}}] registration: {{e}}")
-            print("Mission aborted. Exiting.")
+            self.logger.error(f"An error occurred during function [{{func_name}}] registration: {{e}}")
+            self.logger.error("Mission aborted.")
             os._exit(1)
         except RpcBinderRequestException as e:
-            print(f"RPC Binder returns an error response during function [{{func_name}}] registration: {{e}}")
-            print("Mission aborted. Exiting.")
+            self.logger.error(f"RPC Binder returns an error response during function [{{func_name}}] registration: {{e}}")
+            self.logger.error("Mission aborted.")
             os._exit(1)
         
 
@@ -86,18 +91,18 @@ class RpcServerStub(SrpcServerStubInterface):
                 request_tuple = self.__serializer.deserialize(msg)
                 
                 if isinstance(request_tuple, tuple) and request_tuple[0] == func_name:
-                    print(f"Request: {{request_tuple}} from: {{addr[0]}}")
+                    self.logger.info(f"Request: {{request_tuple}} from: {{addr[0]}}")
                     result = self.__call_func(request_tuple)
                     response = ("200", "", result)
                 else:
                     raise RpcProcUnvailException("The program cannot support the requested procedure.")
             except Exception as e:
-                print(f"func [{{func_name}}] call error: {{e}}")
+                self.logger.error(f"Function [{{func_name}}] call error: {{e}}")
                 response = ("500", str(e), type(e).__name__)
             finally:
                 conn.sendall( self.__serializer.serialize(response))
                 
-    def __listen_for_func(self, func_name, ponte):
+    def __listen_for_func(self, func_name):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind((self.__host, 0))
@@ -109,31 +114,36 @@ class RpcServerStub(SrpcServerStubInterface):
             while not self.__stop_event.is_set():
                 try:
                     conn, addr = s.accept()
-                    #print(f"Port [{{port}}] Connected: {{addr}}")
                     self.__executor.submit(self.__handle_request, func_name, conn, addr)
                 except socket.timeout:
                     continue
                 except Exception as e:
-                    print(f"[{{port}}] Listener error: {{e}}")
+                    self.logger.error(f"An error occurred while listening for function [{{func_name}}] in port [{{port}}]: {{e}}")
+                    os._exit(1)
 
     def start(self):
         time.sleep(2)
-        for func_name in self.__lib_procedures_name:
-            t = threading.Thread(
-                target=self.__listen_for_func, 
-                args=(func_name, 5), 
-                daemon=True
-                )
-            self.__threads.append(t)
-            t.start()
+        try:
+            for func_name in self.__lib_procedures_name:
+                t = threading.Thread(None,
+                    target=self.__listen_for_func,
+                    name=f"Thread-Listener-for-func-{{func_name}}", 
+                    args=[func_name]
+                    )
+                self.__threads.append(t)
+                t.start()
+        except Exception as e:
+            self.logger.error(f"An error occurred while starting the server stub: {{e}}")
+            self.logger.error("Mission aborted.")
+            os._exit(1)
 
     def stop(self):
-        print("Stopping stub...")
+        self.logger.info("Stopping stub...")
         self.__stop_event.set()
         for t in self.__threads:
             t.join()
         self.__executor.shutdown(wait=True)
-        print("stub successfully stoped.")
+        self.logger.info("Stub successfully stopped.")
 '''
     with open(f"{server_module_name}_rpc_server_stub.py", "w") as f:
         f.write(code)
