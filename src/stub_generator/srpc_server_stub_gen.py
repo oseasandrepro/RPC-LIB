@@ -96,6 +96,9 @@ class RpcServerStub(SrpcServerStubInterface):
                     response = ("200", "", result)
                 else:
                     raise RpcProcUnvailException("The program cannot support the requested procedure.")
+            except RpcProcUnvailException as e:
+                self.logger.info(f"Procedure [{{func_name}}] is unavailable: {{e.message}}")
+                response = ("404", e.message, type(e).__name__)
             except Exception as e:
                 self.logger.error(f"Function [{{func_name}}] call error: {{e}}")
                 response = ("500", str(e), type(e).__name__)

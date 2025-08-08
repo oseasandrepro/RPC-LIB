@@ -9,7 +9,7 @@ def gen_client_stub(interface_file_name, interface_name,
     module_name = interface_file_name.split('_')[0]
     code = f"""
 import socket
-import os
+import logging
 from util.srpc_serializer import SrpcSerializer
 from binder.srpc_client_binder import RpcClientBinder
 from srpc_exceptions import RpcCallException, RpcTransportException, RpcProcUnvailException
@@ -24,6 +24,11 @@ class _RpcClientStub(SrpcClientStubInterface):
         self.__HOST = "{server_hostname}"
         self.__functions = {{}}
         self.__bind()
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s : %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S")
     
     def __bind(self):
         binder = RpcClientBinder(self.__HOST)
@@ -42,19 +47,28 @@ class _RpcClientStub(SrpcClientStubInterface):
             serialized_response = socket_cli.recv(1024)
             deserialized_response = self.__serializer.deserialize(serialized_response)
 
-            if deserialized_response[0] != "200":
-                raise RpcCallException(deserialized_response[1], deserialized_response[2]) #(code, message, excepiton type)
+            #(code, message, excepiton type)
+            if deserialized_response[0] == "500":
+                raise RpcCallException(deserialized_response[1], deserialized_response[2]) 
+            elif deserialized_response[0] == "404":
+                raise RpcProcUnvailException(deserialized_response[1])
                     
             return deserialized_response[2]
         
         except RpcCallException as e:
             raise RpcCallException(e.message, e.code)
+        except RpcProcUnvailException as e:
+            self.logger.error(f"Procedure {{func_name}} is unavailable on the server: {{e.message}}")
         except socket.timeout:
-           raise RpcTransportException("Timeout occurred during RPC call.")
+            self.logger.error("Timeout occurred during RPC call.")
+        except socket.gaierror:
+            self.logger.error(f"Network error: Unable to connect to the server. Check the hostname and port.")
+        except ConnectionRefusedError:
+            self.logger.error(f"Connection refused. Is the server running and reachable?")
+        except socket.error as e:
+            self.logger.error(f"Socket error: {{e}}")
         except OSError as e:
-            print(f"General OS error: {{e}}")
-            print("Mission aborted. Exiting.")
-            os._exit(1)
+            self.logger.error(f"OS error during RPC call: {{e}}")
 """+f"""
 class {module_name}_stub({interface_name}):
     def __init__(self):
@@ -68,15 +82,10 @@ class {module_name}_stub({interface_name}):
     def {key}(self{ ',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
         try:
             return self.__client_stub.remote_call('{key}', ({parameter_tuple[1:-1] if parameter_tuple else ''}) )
-
         except RpcCallException as e:
             exc_name = e.code #exception type
             exc_class = eval(exc_name)
             raise exc_class(e.message)
-        except RpcTransportException as e:
-            print(f"Network issue: {{e}}")
-            print("Mission aborted. Exiting.")
-            os._exit(1)
         """+"""
             """
         methods += peace_of_code
