@@ -12,7 +12,7 @@ import socket
 import logging
 from util.srpc_serializer import SrpcSerializer
 from binder.srpc_client_binder import RpcClientBinder
-from srpc_exceptions import RpcCallException, RpcTransportException, RpcProcUnvailException
+from srpc_exceptions import RpcCallException, RpcProcUnvailException
 from interface.srpc_client_stub_interface import SrpcClientStubInterface
 
 from {interface_file_name.split('.')[0]} import {interface_name}
