@@ -17,6 +17,8 @@ INTEGRATION_TEST_WORK_DIR = "./integrationTestWorkDir"
 STUB_GEN_SCRIPT = "src/srpc_gen.py"
 SERVER_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py"
 CLIENT_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py"
+SERVER_HOST = '127.0.0.1'
+SERVER_PORT = 500
 
 def seting_up():
     shutil.copytree("./src/binder", f"{INTEGRATION_TEST_WORK_DIR}/binder")
@@ -31,66 +33,64 @@ def seting_up():
 def clean():
     if os.path.exists(INTEGRATION_TEST_WORK_DIR):
         shutil.rmtree(INTEGRATION_TEST_WORK_DIR)
-SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 8000
 
+
+def wait_for_server(host, port, timeout=5):
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=1):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
 
 def test_basic_rpc_flow():
+    clean()
     try:
-        clean()
-        time.sleep(1)
         seting_up()
-        hostname = socket.gethostname()
-        ip_address = socket.gethostbyname(hostname)
 
-        stub_gen_input = f"./tests/test_resources/calc_interface.py\n{ip_address}"
-        stup_gen_proc = subprocess.run(
+        stub_gen_input = f"{ROOT}/tests/test_resources/calc_interface.py\n127.0.0.1"
+        subprocess.run(
             [sys.executable, STUB_GEN_SCRIPT],
             input=stub_gen_input,
             text=True,
-            capture_output=True,
             check=True
         )
 
-        time.sleep(1)
-        assert True == os.path.exists("calc_rpc_client_stub.py")
-        assert True == os.path.exists("calc_rpc_server_stub.py")
-        shutil.copy("./calc_rpc_client_stub.py", f"{INTEGRATION_TEST_WORK_DIR}/calc_rpc_client_stub.py")
-        shutil.copy("./calc_rpc_server_stub.py", f"{INTEGRATION_TEST_WORK_DIR}/calc_rpc_server_stub.py")
-        os.remove("./calc_rpc_client_stub.py")
-        os.remove("./calc_rpc_server_stub.py")
+        stub_client = ROOT / "calc_rpc_client_stub.py"
+        stub_server = ROOT / "calc_rpc_server_stub.py"
+        assert stub_client.exists()
+        assert stub_server.exists()
 
-        logger.info("Integration test environment ready...")
+        shutil.copy(stub_client, INTEGRATION_TEST_WORK_DIR / "calc_rpc_client_stub.py")
+        shutil.copy(stub_server, INTEGRATION_TEST_WORK_DIR / "calc_rpc_server_stub.py")
 
-        
+        # launch server
         server_proc = subprocess.Popen(
-        [sys.executable, SERVER_SCRIPT],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True 
+            [sys.executable, SERVER_SCRIPT],
+            stdout=None, stderr=None, text=True
         )
-        logger.info("Server process lunched")
 
-        time.sleep(1)  # wait for the server to start
+        assert wait_for_server(SERVER_HOST, SERVER_PORT), "Server did not start in time"
+
+        # run client
         client_proc = subprocess.run(
             [sys.executable, CLIENT_SCRIPT],
             text=True,
             capture_output=True,
             check=True
         )
-        logger.info("Client process lunched")
 
-        lines = client_proc.stdout.splitlines()
         expected_output = ["6", "8", "2", "2.0"]
-        index = 0
-        for line in lines:
-            assert line == expected_output[index]
-            index += 1
-        
+        assert client_proc.stdout.splitlines() == expected_output
 
-        print("integration test sucefully finished.")
     except Exception as e:
-        pytest.fail(f"Error during intergration test: {str(e)}")
+        pytest.fail(f"Error during integration test: {e}")
     finally:
+        try:
+            server_proc.terminate()
+            server_proc.wait(timeout=3)
+        except Exception:
+            pass
         clean()
