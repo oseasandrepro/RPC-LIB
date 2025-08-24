@@ -10,7 +10,7 @@ def gen_client_stub(interface_file_name, interface_name,
     code = f"""
 import socket
 import logging
-from util.srpc_serializer import SrpcSerializer
+from utils.srpc_serializer import SrpcSerializer
 from binder.srpc_client_binder import RpcClientBinder
 from srpc_exceptions import RpcCallException, RpcProcUnvailException
 from interface.srpc_client_stub_interface import SrpcClientStubInterface
