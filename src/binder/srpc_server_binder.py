@@ -1,7 +1,7 @@
 import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from util.srpc_serializer import SrpcSerializer
+from utils.srpc_serializer import SrpcSerializer
 from interface.srpc_server_binder_interface import SrpcServerBinderInterface
 import logging
 

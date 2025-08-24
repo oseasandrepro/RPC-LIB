@@ -14,7 +14,7 @@ import inspect
 import time
 import os
 
-from util.srpc_serializer import SrpcSerializer
+from utils.srpc_serializer import SrpcSerializer
 from srpc_exceptions import RpcBinderRequestException, RpcProcUnvailException
 from interface.srpc_server_stub_interface import SrpcServerStubInterface
 import logging

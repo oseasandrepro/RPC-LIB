@@ -1,4 +1,4 @@
-from util.srpc_serializer import SrpcSerializer
+from utils.srpc_serializer import SrpcSerializer
 from interface.srpc_client_binder_interface import SrpcClientBinderInterface
 import socket
 from srpc_exceptions import RpcBinderRequestException
