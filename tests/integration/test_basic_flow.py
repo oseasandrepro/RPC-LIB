@@ -13,11 +13,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-INTEGRATION_TEST_WORK_DIR = "./integrationTestWorkDir"
-STUB_GEN_SCRIPT = "src/srpc_gen.py"
+INTEGRATION_TEST_WORK_DIR = ROOT / "integrationTestWorkDir"
+STUB_GEN_SCRIPT = ROOT / "src/srpc_gen.py"
 SERVER_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py"
 CLIENT_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py"
-SERVER_HOST = '127.0.0.1'
+
+SERVER_HOST = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 500
 
 def seting_up():
@@ -35,36 +36,24 @@ def clean():
         shutil.rmtree(INTEGRATION_TEST_WORK_DIR)
 
 
-def wait_for_server(host, port, timeout=5):
-    start = time.time()
-    while time.time() - start < timeout:
-        try:
-            with socket.create_connection((host, port), timeout=1):
-                return True
-        except OSError:
-            time.sleep(0.1)
-    return False
-
 def test_basic_rpc_flow():
     clean()
     try:
         seting_up()
 
-        stub_gen_input = f"{ROOT}/tests/test_resources/calc_interface.py\n127.0.0.1"
+        stub_gen_input = f"{ROOT}/tests/test_resources/calc_interface.py\n{SERVER_HOST}"
         subprocess.run(
-            [sys.executable, STUB_GEN_SCRIPT],
+            [sys.executable, str(STUB_GEN_SCRIPT)],
+            cwd=str(INTEGRATION_TEST_WORK_DIR),
             input=stub_gen_input,
             text=True,
             check=True
         )
 
-        stub_client = ROOT / "calc_rpc_client_stub.py"
-        stub_server = ROOT / "calc_rpc_server_stub.py"
+        stub_client = INTEGRATION_TEST_WORK_DIR / "calc_rpc_client_stub.py"
+        stub_server = INTEGRATION_TEST_WORK_DIR / "calc_rpc_server_stub.py"
         assert stub_client.exists()
         assert stub_server.exists()
-
-        shutil.copy(stub_client, INTEGRATION_TEST_WORK_DIR / "calc_rpc_client_stub.py")
-        shutil.copy(stub_server, INTEGRATION_TEST_WORK_DIR / "calc_rpc_server_stub.py")
 
         # launch server
         server_proc = subprocess.Popen(
@@ -72,7 +61,7 @@ def test_basic_rpc_flow():
             stdout=None, stderr=None, text=True
         )
 
-        assert wait_for_server(SERVER_HOST, SERVER_PORT), "Server did not start in time"
+        time.sleep(3)
 
         # run client
         client_proc = subprocess.run(
