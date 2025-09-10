@@ -3,10 +3,11 @@ from stub_generator.srpc_stub_utils import DEFAULT_BINDER_PORT
 
 logger = logging.getLogger(__name__)
 
+
 def gen_server_stub(interface_file_name, interface_name):
-    server_module_name = interface_file_name.split('_')[0]
+    server_module_name = interface_file_name.split("_")[0]
     server_class_name = server_module_name[0].upper() + server_module_name[1:]
-    code = f'''
+    code = f"""
 from concurrent.futures import ThreadPoolExecutor
 import socket
 import threading
@@ -147,11 +148,13 @@ class RpcServerStub(SrpcServerStubInterface):
             t.join()
         self.__executor.shutdown(wait=True)
         self.logger.info("Stub successfully stopped.")
-'''
+"""
     with open(f"{server_module_name}_rpc_server_stub.py", "w") as f:
         f.write(code)
-    
+
     server_stub_file_name = f"{server_module_name}_rpc_server_stub.py"
     logger.info(f"Server stub successfully generated: {server_stub_file_name}")
-    logger.info(f"You must implement the Class '{server_class_name}' that implements '{interface_name}', " + 
-                      f"inside '{server_module_name}.py' file.")
+    logger.info(
+        f"You must implement the Class '{server_class_name}' that implements '{interface_name}', "
+        + f"inside '{server_module_name}.py' file."
+    )

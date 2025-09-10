@@ -14,7 +14,9 @@ binder = SrpcServerBinder(ip_address)
 # TODO: put this logic inside the RpcServerStub and SrpcServerBinder classes
 stop_event = threading.Event()
 try:
-    binder_thread = threading.Thread(target=binder.start_binder,name="binder_thread", daemon=True)
+    binder_thread = threading.Thread(
+        target=binder.start_binder, name="binder_thread", daemon=True
+    )
     binder_thread.start()
 
     server_stub.start()

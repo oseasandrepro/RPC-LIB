@@ -1,13 +1,15 @@
-
 import logging
 import stub_generator.srpc_stub_utils as stub_utils
 
 logger = logging.getLogger(__name__)
 
-def gen_client_stub(interface_file_name, interface_name, 
-                    dictionary_of_methods: dict, server_hostname):
-    module_name = interface_file_name.split('_')[0]
-    code = f"""
+
+def gen_client_stub(
+    interface_file_name, interface_name, dictionary_of_methods: dict, server_hostname
+):
+    module_name = interface_file_name.split("_")[0]
+    code = (
+        f"""
 import socket
 import logging
 from utils.srpc_serializer import SrpcSerializer
@@ -69,16 +71,19 @@ class _RpcClientStub(SrpcClientStubInterface):
             self.logger.error(f"Socket error: {{e}}")
         except OSError as e:
             self.logger.error(f"OS error during RPC call: {{e}}")
-"""+f"""
+"""
+        + f"""
 class {module_name}_stub({interface_name}):
     def __init__(self):
         self.__client_stub = _RpcClientStub()
 """
+    )
     methods = f""""""
     for key, value in dictionary_of_methods.items():
         parameters = stub_utils.extract_params_from_method_sig(value)
         parameter_tuple = stub_utils.build_param_tuple(parameters)
-        peace_of_code = f"""
+        peace_of_code = (
+            f"""
     def {key}(self{ ',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
         try:
             return self.__client_stub.remote_call('{key}', ({parameter_tuple[1:-1] if parameter_tuple else ''}) )
@@ -86,8 +91,10 @@ class {module_name}_stub({interface_name}):
             exc_name = e.code #exception type
             exc_class = eval(exc_name)
             raise exc_class(e.message)
-        """+"""
+        """
+            + """
             """
+        )
         methods += peace_of_code
     code += methods
     stub_file_name = f"{module_name}_rpc_client_stub.py"
@@ -100,4 +107,6 @@ class {module_name}_stub({interface_name}):
         exit(1)
     else:
         logger.info(f"Client stub successfully generated: {stub_file_name}")
-        logger.info(f"you should import {module_name}_stub from {stub_file_name} to call the procedures")
+        logger.info(
+            f"you should import {module_name}_stub from {stub_file_name} to call the procedures"
+        )

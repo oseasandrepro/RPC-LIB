@@ -1,8 +1,9 @@
 from src.stub_generator import srpc_stub_utils
 
+
 class TestSrpcStubUtils:
     def testBuildParamTupleWithNotEmptyList(self):
-        params = ['param1', 'param2', 'param3']
+        params = ["param1", "param2", "param3"]
         expected = "(param1, param2, param3)"
         result = srpc_stub_utils.build_param_tuple(params)
 
@@ -13,7 +14,6 @@ class TestSrpcStubUtils:
         expected = "()"
         result = srpc_stub_utils.build_param_tuple(params)
         assert expected == result
-    
 
     def testload_module_from_path(self):
         path = "./tests/test_resources/mock_interface.py"

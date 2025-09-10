@@ -1,4 +1,4 @@
-#This test checks the basic flow of the RPC library by calling the four arithmetic operations
+# This test checks the basic flow of the RPC library by calling the four arithmetic operations
 import subprocess
 import sys
 import os
@@ -21,15 +21,30 @@ CLIENT_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py"
 SERVER_HOST = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 500
 
+
 def seting_up():
     shutil.copytree("./src/binder", f"{INTEGRATION_TEST_WORK_DIR}/binder")
     shutil.copytree("./src/interface", f"{INTEGRATION_TEST_WORK_DIR}/interface")
     shutil.copytree("./src/utils", f"{INTEGRATION_TEST_WORK_DIR}/utils")
-    shutil.copy("./src/srpc_exceptions.py", f"{INTEGRATION_TEST_WORK_DIR}/srpc_exceptions.py")
-    shutil.copy("./tests/integration/run_rpc_server.py", f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py")
-    shutil.copy("./tests/integration/run_rpc_client.py", f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py")
-    shutil.copy("./tests/test_resources/calc_interface.py", f"{INTEGRATION_TEST_WORK_DIR}/calc_interface.py")
-    shutil.copy("./tests/test_resources/calc.py", f"{INTEGRATION_TEST_WORK_DIR}/calc.py")
+    shutil.copy(
+        "./src/srpc_exceptions.py", f"{INTEGRATION_TEST_WORK_DIR}/srpc_exceptions.py"
+    )
+    shutil.copy(
+        "./tests/integration/run_rpc_server.py",
+        f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py",
+    )
+    shutil.copy(
+        "./tests/integration/run_rpc_client.py",
+        f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py",
+    )
+    shutil.copy(
+        "./tests/test_resources/calc_interface.py",
+        f"{INTEGRATION_TEST_WORK_DIR}/calc_interface.py",
+    )
+    shutil.copy(
+        "./tests/test_resources/calc.py", f"{INTEGRATION_TEST_WORK_DIR}/calc.py"
+    )
+
 
 def clean():
     if os.path.exists(INTEGRATION_TEST_WORK_DIR):
@@ -47,7 +62,7 @@ def test_basic_rpc_flow():
             cwd=str(INTEGRATION_TEST_WORK_DIR),
             input=stub_gen_input,
             text=True,
-            check=True
+            check=True,
         )
 
         stub_client = INTEGRATION_TEST_WORK_DIR / "calc_rpc_client_stub.py"
@@ -57,18 +72,14 @@ def test_basic_rpc_flow():
 
         # launch server
         server_proc = subprocess.Popen(
-            [sys.executable, SERVER_SCRIPT],
-            stdout=None, stderr=None, text=True
+            [sys.executable, SERVER_SCRIPT], stdout=None, stderr=None, text=True
         )
 
         time.sleep(3)
 
         # run client
         client_proc = subprocess.run(
-            [sys.executable, CLIENT_SCRIPT],
-            text=True,
-            capture_output=True,
-            check=True
+            [sys.executable, CLIENT_SCRIPT], text=True, capture_output=True, check=True
         )
 
         expected_output = ["6", "8", "2", "2.0"]

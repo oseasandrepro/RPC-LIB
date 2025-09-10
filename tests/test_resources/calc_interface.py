@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class CalcInterface(ABC):
     @abstractmethod
     def add(self, a: int, b: int) -> int:
