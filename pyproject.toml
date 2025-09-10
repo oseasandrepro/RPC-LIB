@@ -8,3 +8,19 @@ version = "0.1.0"
 description = "SRPC is a lightweight Remote Procedure Call (RPC) library designed for clean abstraction between distributed services or processes, facilitating rapid prototyping."
 authors = [{ name="Oseas Andre", email="oseasandrepro@gmail.com" }]
 dependencies = ["pytest>=8.4.1"]
+
+[tool.black]
+line-lenght = 100
+include = '\.piy?$'
+exclude = '''
+/(
+  \.git
+ | \.hg
+ | \.mypy_cache
+ | \.tox
+ | \.venv
+ | _build
+ | buck-out
+ | build
+ )/
+'''
