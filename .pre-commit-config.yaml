@@ -1,15 +1,15 @@
 repos:
--   repo: https://github.com/ambv/black
+  - repo: https://github.com/ambv/black
     rev: 20.8b1
     hooks:
-    - id: black
--   repo: https://gitlab.com/pycqa/flake8
+      - id: black
+
+  - repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
     hooks:
-    - id: flake8
--   repo: https://github.com/timothycrosley/isort
+      - id: flake8
+
+  - repo: https://github.com/timothycrosley/isort
     rev: 5.7.0
     hooks:
-    - id: isort
--   repo: https://github.com/econchick/interrogate
-    rev: 1.4.0
+      - id: isort
