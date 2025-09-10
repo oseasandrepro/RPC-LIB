@@ -1,13 +1,14 @@
 # This test checks the basic flow of the RPC library by calling the four arithmetic operations
-import subprocess
-import sys
+import logging
 import os
-import time
-import pytest
 import shutil
 import socket
+import subprocess
+import sys
+import time
 from pathlib import Path
-import logging
+
+import pytest
 
 logger = logging.getLogger(__name__)
 

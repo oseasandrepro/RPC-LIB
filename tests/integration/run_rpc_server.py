@@ -1,8 +1,9 @@
-from binder.srpc_server_binder import SrpcServerBinder
-from calc_rpc_server_stub import RpcServerStub
-import threading
 import socket
+import threading
 
+from calc_rpc_server_stub import RpcServerStub
+
+from binder.srpc_server_binder import SrpcServerBinder
 
 hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
