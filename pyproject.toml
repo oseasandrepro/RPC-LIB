@@ -5,13 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rpc-lib"
 version = "0.1.0"
-description = "SRPC is a lightweight Remote Procedure Call (RPC) library designed for clean abstraction between distributed services or processes, facilitating rapid prototyping."
+description = "SRPC is a lightweight Remote Procedure Call (RPC) library."
 authors = [{ name="Oseas Andre", email="oseasandrepro@gmail.com" }]
 dependencies = ["pytest>=8.4.1"]
 
 [tool.black]
-line-lenght = 100
-include = '\.piy?$'
+line-length = 100
+include = '\.pyi?$'
 exclude = '''
 /(
   \.git

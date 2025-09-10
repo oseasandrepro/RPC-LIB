@@ -4,12 +4,13 @@ repos:
     hooks:
       - id: black
 
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/pycqa/flake8
     rev: 3.8.4
     hooks:
       - id: flake8
 
   - repo: https://github.com/timothycrosley/isort
-    rev: 5.7.0
+    rev: 5.13.2
     hooks:
       - id: isort
+        args: ["--profile", "black", "--line-length", "100"]
