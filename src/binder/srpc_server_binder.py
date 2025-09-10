@@ -45,7 +45,7 @@ class SrpcServerBinder(SrpcServerBinderInterface):
                 port = request_tuple[2]
                 self.__functions[req_function] = port
                 response_tuple = ("200", "", None)
-                self.logger.info(f"Function [{req_function}] registered on port [{port}]")
+                self.logger.info(f"Function [{req_function}] registered on port #[{port}]")
             else:
                 self.logger.error(f"Unknown request type: {request_tuple[0]}")
                 response_tuple = ("500", "erro simulado", None)
