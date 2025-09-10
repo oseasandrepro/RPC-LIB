@@ -6,7 +6,6 @@ import time
 import pytest
 import shutil
 import socket
-import sys
 from pathlib import Path
 import logging
 
