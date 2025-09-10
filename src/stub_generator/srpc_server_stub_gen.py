@@ -1,4 +1,5 @@
 import logging
+
 from stub_generator.srpc_stub_utils import DEFAULT_BINDER_PORT
 
 logger = logging.getLogger(__name__)

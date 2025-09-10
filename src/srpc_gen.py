@@ -1,5 +1,6 @@
-from os import path
 import logging
+from os import path
+
 import stub_generator.srpc_client_stub_gen as client_stub_gen
 import stub_generator.srpc_server_stub_gen as server_stub_gen
 import stub_generator.srpc_stub_utils as stub_util
