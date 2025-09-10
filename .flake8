@@ -1,0 +1,5 @@
+[flake8]
+max-line-length = 100
+per-file-ignores =
+        src\stub_generator\srpc_client_stub_gen.py: E501
+        src\stub_generator\srpc_server_stub_gen.py: E501

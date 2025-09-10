@@ -31,17 +31,16 @@ class _RpcClientStub(SrpcClientStubInterface):
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(name)s : %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S")
-    
+
     def __bind(self):
         binder = RpcClientBinder(self.__HOST)
         self.__functions = binder.binding_lookup()
-        
-    
+
     def remote_call(self, func_name, parameters: tuple):
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socket_cli.connect((self.__HOST, self.__functions[func_name]))
-                    
+
             request = (func_name, *parameters)
             serialized_request = self.__serializer.serialize(request)
             socket_cli.sendall(serialized_request)
@@ -51,20 +50,20 @@ class _RpcClientStub(SrpcClientStubInterface):
 
             #(code, message, excepiton type)
             if deserialized_response[0] == "500":
-                raise RpcCallException(deserialized_response[1], deserialized_response[2]) 
+                raise RpcCallException(deserialized_response[1], deserialized_response[2])
             elif deserialized_response[0] == "404":
                 raise RpcProcUnvailException(deserialized_response[1])
-                    
+
             return deserialized_response[2]
-        
+
         except RpcCallException as e:
             raise RpcCallException(e.message, e.code)
         except RpcProcUnvailException as e:
-            self.logger.error(f"Procedure {{func_name}} is unavailable on the server: {{e.message}}")
+            self.logger.error(f"Procedure {{func_name}} unavailable: {{e.message}}")
         except socket.timeout:
             self.logger.error("Timeout occurred during RPC call.")
         except socket.gaierror:
-            self.logger.error(f"Network error: Unable to connect to the server. Check the hostname and port.")
+            self.logger.error(f"Network error: Unable to connect to the server.")
         except ConnectionRefusedError:
             self.logger.error(f"Connection refused. Is the server running and reachable?")
         except socket.error as e:
@@ -78,13 +77,13 @@ class {module_name}_stub({interface_name}):
         self.__client_stub = _RpcClientStub()
 """
     )
-    methods = f""""""
+    methods = """"""
     for key, value in dictionary_of_methods.items():
         parameters = stub_utils.extract_params_from_method_sig(value)
         parameter_tuple = stub_utils.build_param_tuple(parameters)
         peace_of_code = (
             f"""
-    def {key}(self{ ',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
+    def {key}(self{',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
         try:
             return self.__client_stub.remote_call('{key}', ({parameter_tuple[1:-1] if parameter_tuple else ''}) )
         except RpcCallException as e:

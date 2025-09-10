@@ -53,7 +53,7 @@ class RpcClientBinder(SrpcClientBinderInterface):
             exit(1)
         except RpcBinderRequestException as e:
             self.logger.error(
-                f"RPC Binder Server returns an error response during lookup"
+                f"RPC Binder Server returns an error response during lookup: {str(e)}"
             )
             self.logger.error(f"RPC Binder Server Error: {str(e)}")
             self.logger.error("Mission aborted.")

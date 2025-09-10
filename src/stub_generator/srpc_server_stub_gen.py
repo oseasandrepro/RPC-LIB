@@ -44,20 +44,20 @@ class RpcServerStub(SrpcServerStubInterface):
 
     def __get_lib_procedures_name(self):
         return [name for name, member in inspect.getmembers({interface_name}, predicate=inspect.isfunction)]
-    
+
     def __check_implements_interface(self, obj, interface):
         if not isinstance(obj, interface):
             logging.error(f"Object of type {{type(obj).__name__}} must implement interface {{interface.__name__}}")
             self.logger.error("Mission aborted.")
             os._exit(1)
-        
+
     def __call_func(self, t: tuple):
         try:
             method = getattr(self.__lib_procedures, t[0])
             return method(*t[1:])
         except AttributeError:
             return None
-        
+
     def __register_func_in_binder(self, func_name, port):
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -65,14 +65,14 @@ class RpcServerStub(SrpcServerStubInterface):
             request = ("REGISTER", func_name, port)
             serialized_request = self.__serializer.serialize(request)
             socket_cli.sendall(serialized_request)
-        
+
             serialized_response = socket_cli.recv(1024)
             deserialized_response = self.__serializer.deserialize(serialized_response)
-            
+
             if deserialized_response[0] != "200":
                 raise RpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
 
-            socket_cli.close()      
+            socket_cli.close()
         except socket.timeout:
             self.logger.error(f"Timeout occurred during RPC bind for function [{{func_name}}].")
         except OSError as e:
@@ -83,14 +83,14 @@ class RpcServerStub(SrpcServerStubInterface):
             self.logger.error(f"RPC Binder returns an error response during function [{{func_name}}] registration: {{e}}")
             self.logger.error("Mission aborted.")
             os._exit(1)
-        
+
 
     def __handle_request(self, func_name, conn, addr):
         with conn:
             try:
                 msg = conn.recv(1024)
                 request_tuple = self.__serializer.deserialize(msg)
-                
+
                 if isinstance(request_tuple, tuple) and request_tuple[0] == func_name:
                     self.logger.info(f"Request: {{request_tuple}} from: {{addr[0]}}")
                     result = self.__call_func(request_tuple)
@@ -105,7 +105,7 @@ class RpcServerStub(SrpcServerStubInterface):
                 response = ("500", str(e), type(e).__name__)
             finally:
                 conn.sendall( self.__serializer.serialize(response))
-                
+
     def __listen_for_func(self, func_name):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -114,7 +114,7 @@ class RpcServerStub(SrpcServerStubInterface):
             self.__register_func_in_binder(func_name, port)
             s.listen()
             s.settimeout(1.0)
-            
+
             while not self.__stop_event.is_set():
                 try:
                     conn, addr = s.accept()
@@ -131,7 +131,7 @@ class RpcServerStub(SrpcServerStubInterface):
             for func_name in self.__lib_procedures_name:
                 t = threading.Thread(None,
                     target=self.__listen_for_func,
-                    name=f"Thread-Listener-for-func-{{func_name}}", 
+                    name=f"Thread-Listener-for-func-{{func_name}}",
                     args=[func_name]
                     )
                 self.__threads.append(t)

@@ -83,7 +83,7 @@ class SrpcServerBinder(SrpcServerBinderInterface):
                         break
                     else:
                         self.logger.error(
-                            f"Binder server encountered an error while accepting connections: {str(e)}"
+                            f"Binder server - error while accepting connections: {str(e)}"
                         )
                         self.logger.error("Mission aborted.")
                         break

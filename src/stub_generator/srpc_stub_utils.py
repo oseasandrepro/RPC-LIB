@@ -38,11 +38,11 @@ def get_interface_from_module(module: ModuleType) -> ABC:
     try:
         if not issubclass(interface, ABC):
             raise TypeError(
-                f"Module {module.__name__}, does not contain an class that implement ABC class(an interface)."
+                f"{module.__name__}, do not contain an implementation of ABC class."
             )
         if not interface_name == expected_interface_name:
             raise NameError(
-                f"Module {module.__name__}, does not contain an interface class called {expected_interface_name}."
+                f"{module.__name__}, do not contain an ABC class called {expected_interface_name}."
             )
     except TypeError as e:
         logger.error(str(e))
