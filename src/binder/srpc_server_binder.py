@@ -39,17 +39,13 @@ class SrpcServerBinder(SrpcServerBinderInterface):
             if request_tuple[0] == "LOOKUP":
                 response_tuple = ("200", "", self.__functions)
                 self.__total_lookup_request += 1
-                self.logger.info(
-                    f"Total lookup requests: {self.__total_lookup_request}"
-                )
+                self.logger.info(f"Total lookup requests: {self.__total_lookup_request}")
             elif request_tuple[0] == "REGISTER":
                 req_function = request_tuple[1]
                 port = request_tuple[2]
                 self.__functions[req_function] = port
                 response_tuple = ("200", "", None)
-                self.logger.info(
-                    f"Function [{req_function}] registered on port [{port}]"
-                )
+                self.logger.info(f"Function [{req_function}] registered on port [{port}]")
             else:
                 self.logger.error(f"Unknown request type: {request_tuple[0]}")
                 response_tuple = ("500", "erro simulado", None)
@@ -80,7 +76,7 @@ class SrpcServerBinder(SrpcServerBinderInterface):
                     continue
                 except OSError as e:
                     if self.__shutdown_event.is_set():
-                        self.logger.info("Binder shutdown event set, stopping server.")
+                        self.logger.info("Binder shutdown event set. stopping server.")
                         break
                     else:
                         self.logger.error(

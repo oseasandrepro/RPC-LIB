@@ -40,9 +40,7 @@ class RpcClientBinder(SrpcClientBinderInterface):
             response = deserialized_response[2]
         except ConnectionRefusedError as e:
             self.logger.error(str(e))
-            self.logger.error(
-                "Ensure the RPC Binder Server is running. Mission aborted."
-            )
+            self.logger.error("Ensure the RPC Binder Server is running. Mission aborted.")
             exit(1)
         except socket.timeout as e:
             self.logger.error(
