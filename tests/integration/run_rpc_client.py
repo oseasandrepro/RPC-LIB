@@ -1,6 +1,5 @@
-from calc_rpc_client_stub import calc_stub
-
-calc = calc_stub()
+from srpc_calc_client_stub import SrpcCalcClientStub
+calc = SrpcCalcClientStub()
 a = 4
 b = 2
 print(f"{calc.add(a, b)}")

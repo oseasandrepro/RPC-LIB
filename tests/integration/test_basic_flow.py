@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 INTEGRATION_TEST_WORK_DIR = ROOT / "integrationTestWorkDir"
-STUB_GEN_SCRIPT = ROOT / "src/srpc_gen.py"
+STUB_GEN_SCRIPT = ROOT / "src/srpc_stub_gen.py"
 SERVER_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py"
 CLIENT_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py"
 
@@ -61,8 +61,8 @@ def test_basic_rpc_flow():
             check=True,
         )
 
-        stub_client = INTEGRATION_TEST_WORK_DIR / "calc_rpc_client_stub.py"
-        stub_server = INTEGRATION_TEST_WORK_DIR / "calc_rpc_server_stub.py"
+        stub_client = INTEGRATION_TEST_WORK_DIR / "srpc_calc_client_stub.py"
+        stub_server = INTEGRATION_TEST_WORK_DIR / "srpc_calc_server_stub.py"
         assert stub_client.exists()
         assert stub_server.exists()
 
