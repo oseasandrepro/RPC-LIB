@@ -14,13 +14,13 @@ def gen_client_stub(
 import socket
 import logging
 from utils.srpc_serializer import SrpcSerializer
-from binder.srpc_client_binder import RpcClientBinder
-from srpc_exceptions import RpcCallException, RpcProcUnvailException
+from binder.srpc_client_binder import SrpcClientBinder
+from srpc_exceptions import SrpcCallException, SrpcProcUnvailException
 from interface.srpc_client_stub_interface import SrpcClientStubInterface
 
 from {interface_file_name.split('.')[0]} import {interface_name}
 
-class _RpcClientStub(SrpcClientStubInterface):
+class _SrpcClientStub(SrpcClientStubInterface):
 
     def __init__(self):
         self.__serializer = SrpcSerializer()
@@ -34,7 +34,7 @@ class _RpcClientStub(SrpcClientStubInterface):
         datefmt="%Y-%m-%d %H:%M:%S")
 
     def __bind(self):
-        binder = RpcClientBinder(self.__HOST)
+        binder = SrpcClientBinder(self.__HOST)
         self.__functions = binder.binding_lookup()
 
     def remote_call(self, func_name, parameters: tuple):
@@ -51,15 +51,15 @@ class _RpcClientStub(SrpcClientStubInterface):
 
             #(code, message, excepiton type)
             if deserialized_response[0] == "500":
-                raise RpcCallException(deserialized_response[1], deserialized_response[2])
+                raise SrpcCallException(deserialized_response[1], deserialized_response[2])
             elif deserialized_response[0] == "404":
-                raise RpcProcUnvailException(deserialized_response[1])
+                raise SrpcProcUnvailException(deserialized_response[1])
 
             return deserialized_response[2]
 
-        except RpcCallException as e:
-            raise RpcCallException(e.message, e.code)
-        except RpcProcUnvailException as e:
+        except SrpcCallException as e:
+            raise SrpcCallException(e.message, e.code)
+        except SrpcProcUnvailException as e:
             self.logger.error(f"Procedure {{func_name}} unavailable: {{e.message}}")
         except socket.timeout:
             self.logger.error("Timeout occurred during RPC call.")
@@ -73,9 +73,9 @@ class _RpcClientStub(SrpcClientStubInterface):
             self.logger.error(f"OS error during RPC call: {{e}}")
 """
         + f"""
-class {module_name}_stub({interface_name}):
+class Srpc{module_name.capitalize()}ClientStub({interface_name}):
     def __init__(self):
-        self.__client_stub = _RpcClientStub()
+        self.__client_stub = _SrpcClientStub()
 """
     )
     methods = """"""
@@ -87,7 +87,7 @@ class {module_name}_stub({interface_name}):
     def {key}(self{',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
         try:
             return self.__client_stub.remote_call('{key}', ({parameter_tuple[1:-1] if parameter_tuple else ''}) )
-        except RpcCallException as e:
+        except SrpcCallException as e:
             exc_name = e.code #exception type
             exc_class = eval(exc_name)
             raise exc_class(e.message)
@@ -97,7 +97,7 @@ class {module_name}_stub({interface_name}):
         )
         methods += peace_of_code
     code += methods
-    stub_file_name = f"{module_name}_rpc_client_stub.py"
+    stub_file_name = f"srpc_{module_name}_client_stub.py"
 
     try:
         with open(f"{stub_file_name}", "w") as f:

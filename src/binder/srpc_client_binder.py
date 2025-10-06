@@ -2,11 +2,11 @@ import logging
 import socket
 
 from interface.srpc_client_binder_interface import SrpcClientBinderInterface
-from srpc_exceptions import RpcBinderRequestException
+from srpc_exceptions import SrpcBinderRequestException
 from utils.srpc_serializer import SrpcSerializer
 
 
-class RpcClientBinder(SrpcClientBinderInterface):
+class SrpcClientBinder(SrpcClientBinderInterface):
     def __init__(self, host="0.0.0.0"):
         self.__serializer = SrpcSerializer()
         self.__host = host
@@ -33,7 +33,7 @@ class RpcClientBinder(SrpcClientBinderInterface):
             deserialized_response = self.__serializer.deserialize(serialized_response)
 
             if deserialized_response[0] != "200":
-                raise RpcBinderRequestException(
+                raise SrpcBinderRequestException(
                     deserialized_response[1], code=deserialized_response[0]
                 )
 
@@ -50,7 +50,7 @@ class RpcClientBinder(SrpcClientBinderInterface):
                 "Ensure the RPC Binder Server is running and reachable. Mission aborted."
             )
             exit(1)
-        except RpcBinderRequestException as e:
+        except SrpcBinderRequestException as e:
             self.logger.error(
                 f"RPC Binder Server returns an error response during lookup: {str(e)}"
             )

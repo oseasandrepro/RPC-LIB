@@ -1,14 +1,14 @@
 import socket
 import threading
 
-from calc_rpc_server_stub import RpcServerStub
+from srpc_calc_server_stub import SrpcCalcServerStub
 
 from binder.srpc_server_binder import SrpcServerBinder
 
 hostname = socket.gethostname()
 ip_address = socket.gethostbyname(hostname)
 
-server_stub = RpcServerStub(ip_address)
+server_stub = SrpcCalcServerStub(ip_address)
 binder = SrpcServerBinder(ip_address)
 
 # This logic is to gracefully shutdown the server and binder on receiving termination signals
