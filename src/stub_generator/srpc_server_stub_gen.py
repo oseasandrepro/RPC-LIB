@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 def gen_server_stub(interface_file_name, interface_name):
-    server_module_name = interface_file_name.split("_")[0]
-    server_class_name = server_module_name[0].upper() + server_module_name[1:]
+    module_name = interface_file_name.split("_")[0]
+    server_class_name = module_name[0].upper() + module_name[1:]
     code = f"""
 from concurrent.futures import ThreadPoolExecutor
 import socket
@@ -17,14 +17,14 @@ import time
 import os
 
 from utils.srpc_serializer import SrpcSerializer
-from srpc_exceptions import RpcBinderRequestException, RpcProcUnvailException
+from srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
 from interface.srpc_server_stub_interface import SrpcServerStubInterface
 import logging
 
 from {interface_file_name.split('.')[0]} import {interface_name}
-from {server_module_name} import {server_class_name}
+from {module_name} import {server_class_name}
 
-class RpcServerStub(SrpcServerStubInterface):
+class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
     def __init__(self, host='0.0.0.0'):
         self.__BINDER_PORT = {DEFAULT_BINDER_PORT}
@@ -71,7 +71,7 @@ class RpcServerStub(SrpcServerStubInterface):
             deserialized_response = self.__serializer.deserialize(serialized_response)
 
             if deserialized_response[0] != "200":
-                raise RpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
+                raise SrpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
 
             socket_cli.close()
         except socket.timeout:
@@ -80,7 +80,7 @@ class RpcServerStub(SrpcServerStubInterface):
             self.logger.error(f"An error occurred during function [{{func_name}}] registration: {{e}}")
             self.logger.error("Mission aborted.")
             os._exit(1)
-        except RpcBinderRequestException as e:
+        except SrpcBinderRequestException as e:
             self.logger.error(f"RPC Binder returns an error response during function [{{func_name}}] registration: {{e}}")
             self.logger.error("Mission aborted.")
             os._exit(1)
@@ -97,8 +97,8 @@ class RpcServerStub(SrpcServerStubInterface):
                     result = self.__call_func(request_tuple)
                     response = ("200", "", result)
                 else:
-                    raise RpcProcUnvailException("The program cannot support the requested procedure.")
-            except RpcProcUnvailException as e:
+                    raise SrpcProcUnvailException("The program cannot support the requested procedure.")
+            except SrpcProcUnvailException as e:
                 self.logger.info(f"Procedure [{{func_name}}] is unavailable: {{e.message}}")
                 response = ("404", e.message, type(e).__name__)
             except Exception as e:
@@ -150,12 +150,12 @@ class RpcServerStub(SrpcServerStubInterface):
         self.__executor.shutdown(wait=True)
         self.logger.info("Stub successfully stopped.")
 """
-    with open(f"{server_module_name}_rpc_server_stub.py", "w") as f:
+    server_stub_file_name = f"srpc_{module_name}_server_stub.py"
+    with open(server_stub_file_name, "w") as f:
         f.write(code)
 
-    server_stub_file_name = f"{server_module_name}_rpc_server_stub.py"
     logger.info(f"Server stub successfully generated: {server_stub_file_name}")
     logger.info(
         f"You must implement the Class '{server_class_name}' that implements '{interface_name}', "
-        + f"inside '{server_module_name}.py' file."
+        + f"inside '{module_name}.py' file."
     )
