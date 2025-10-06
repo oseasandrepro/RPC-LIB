@@ -1,10 +1,10 @@
-class RpcException(Exception):
+class SrpcException(Exception):
     """Base class for all RPC-related exceptions."""
 
     pass
 
 
-class RpcCallException(RpcException):
+class SrpcCallException(SrpcException):
     """Raised when the RPC server returns an error response."""
 
     def __init__(self, message, code=None):
@@ -12,7 +12,7 @@ class RpcCallException(RpcException):
         self.message = message
 
 
-class RpcBinderRequestException(RpcException):
+class SrpcBinderRequestException(SrpcException):
     """Raised when the RPC server Binder returns an error response."""
 
     def __init__(self, message, code=None):
@@ -20,7 +20,7 @@ class RpcBinderRequestException(RpcException):
         self.message = message
 
 
-class RpcProcUnvailException(RpcException):
+class SrpcProcUnvailException(SrpcException):
     """The program cannot support the requested procedure."""
 
     def __init__(self, message, code=None):
