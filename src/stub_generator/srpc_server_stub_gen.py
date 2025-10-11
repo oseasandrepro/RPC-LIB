@@ -16,6 +16,7 @@ import inspect
 import time
 import os
 
+from binder.srpc_server_binder import SrpcServerBinder
 from utils.srpc_serializer import SrpcSerializer
 from srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
 from interface.srpc_server_stub_interface import SrpcServerStubInterface
@@ -25,11 +26,12 @@ from {interface_file_name.split('.')[0]} import {interface_name}
 from {module_name} import {server_class_name}
 
 class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
-
-    def __init__(self, host='0.0.0.0'):
+    def __init__(self):
+        self.__hostname = socket.gethostname()
+        self.__host = socket.gethostbyname(self.__hostname)
+        self.__binder = SrpcServerBinder(self.__host)
         self.__BINDER_PORT = {DEFAULT_BINDER_PORT}
         self.__lib_procedures_name = self.__get_lib_procedures_name()
-        self.__host = host
         self.__executor = ThreadPoolExecutor(max_workers=10)
         self.__threads = []
         self.__stop_event = threading.Event()
@@ -127,7 +129,9 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     os._exit(1)
 
     def start(self):
-        time.sleep(2)
+        stop_event = threading.Event()
+        binder_thread = threading.Thread(target=self.__binder.start_binder, name="binder_thread", daemon=True)
+        binder_thread.start()
         try:
             for func_name in self.__lib_procedures_name:
                 t = threading.Thread(None,
@@ -137,12 +141,17 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     )
                 self.__threads.append(t)
                 t.start()
+            self.logger.info("SRPC server started, press Ctrl+C to stop")
+            stop_event.wait()
+        except KeyboardInterrupt:
+            self.stop()
         except Exception as e:
             self.logger.error(f"An error occurred while starting the server stub: {{e}}")
             self.logger.error("Mission aborted.")
             os._exit(1)
 
     def stop(self):
+        self.__binder.stop()
         self.logger.info("Stopping stub...")
         self.__stop_event.set()
         for t in self.__threads:
