@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+
 class SrpcMetricsInterface(ABC):
 
     @abstractmethod
@@ -17,7 +18,7 @@ class SrpcMetricsInterface(ABC):
     @abstractmethod
     def inc_counter_fail(self, metric_name: str):
         pass
-    
+
     @abstractmethod
     def record_time(self, metric_name: str, time_taken: float):
         pass

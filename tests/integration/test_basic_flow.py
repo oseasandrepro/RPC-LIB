@@ -26,6 +26,7 @@ def seting_up():
     shutil.copytree("./src/binder", f"{INTEGRATION_TEST_WORK_DIR}/binder")
     shutil.copytree("./src/interface", f"{INTEGRATION_TEST_WORK_DIR}/interface")
     shutil.copytree("./src/utils", f"{INTEGRATION_TEST_WORK_DIR}/utils")
+    shutil.copytree("./src/metrics", f"{INTEGRATION_TEST_WORK_DIR}/metrics")
     shutil.copy("./src/srpc_exceptions.py", f"{INTEGRATION_TEST_WORK_DIR}/srpc_exceptions.py")
     shutil.copy(
         "./tests/integration/run_rpc_server.py",

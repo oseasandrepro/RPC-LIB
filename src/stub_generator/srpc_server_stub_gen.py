@@ -114,8 +114,8 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     result = self.__call_func(request_tuple)
                     end_time = time.time()  # End time measurement
                     response = ("200", "", result)
-                    self.__mestrics.inc_counter_sucess(f"{{func_name}}") #---------------------- counter_sucess
-                    self.__mestrics.record_time(f"{{func_name}}", end_time - start_time) 
+                    self.__mestrics.inc_counter_sucess(f"{{func_name}}")
+                    self.__mestrics.record_time(f"{{func_name}}", end_time - start_time)
                 else:
                     raise SrpcProcUnvailException("The program cannot support the requested procedure.")
             except SrpcProcUnvailException as e:

@@ -21,7 +21,7 @@ class SrpcServerBinder(SrpcServerBinderInterface):
         self.__logger = logging.getLogger(__name__)
         self.__logger.setLevel(logging.INFO)
         self.__console_handler = logging.StreamHandler()
-        self.__formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+        self.__formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
 
