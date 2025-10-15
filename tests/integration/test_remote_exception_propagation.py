@@ -13,10 +13,10 @@ import pytest
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-INTEGRATION_TEST_WORK_DIR = ROOT / "integrationTestWorkDir"
+INTEGRATION_TEST_WORK_DIR = ROOT / "remoteExceptionPropagationTestWorkDir"
 STUB_GEN_SCRIPT = ROOT / "src/srpc_stub_gen.py"
 SERVER_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py"
-CLIENT_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py"
+CLIENT_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client_divizion_by_zero.py"
 
 SERVER_HOST = socket.gethostbyname(socket.gethostname())
 SERVER_PORT = 500
@@ -33,8 +33,8 @@ def seting_up():
         f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py",
     )
     shutil.copy(
-        "./tests/integration/run_rpc_client.py",
-        f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client.py",
+        "./tests/integration/run_rpc_client_divizion_by_zero.py",
+        f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client_divizion_by_zero.py",
     )
     shutil.copy(
         "./tests/test_resources/calc_interface.py",
@@ -51,7 +51,7 @@ def clean():
         os.remove("srpc_server_metrics.log")
 
 
-def test_basic_rpc_flow():
+def test_dision_by_zero_exception():
     try:
         clean()
         seting_up()
@@ -82,8 +82,8 @@ def test_basic_rpc_flow():
             [sys.executable, CLIENT_SCRIPT], text=True, capture_output=True, check=True
         )
 
-        expected_output = ["6", "8", "2", "2.0"]
-        assert client_proc.stdout.splitlines() == expected_output
+        expected_output = "ZeroDivisionError: division by zero"
+        assert client_proc.stdout.splitlines()[-1] == expected_output
 
     except Exception as e:
         pytest.fail(f"Error during integration test: {e}")
