@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 
 class SrpcMetricsInterface(ABC):
-
     @abstractmethod
     def __init__(self, log_path: str, mestrics: dict):
         pass
@@ -12,7 +11,7 @@ class SrpcMetricsInterface(ABC):
         pass
 
     @abstractmethod
-    def inc_counter_sucess(self, metric_name: str):
+    def inc_counter_success(self, metric_name: str):
         pass
 
     @abstractmethod

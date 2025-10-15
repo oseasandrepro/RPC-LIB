@@ -53,7 +53,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
 
     def __set_metrics(self, func_name):
-        self.__mestrics.add_metric(func_name, SrpcmetricsTypes.COUNTER_SUCESS)
+        self.__mestrics.add_metric(func_name, SrpcmetricsTypes.COUNTER_SUCCESS)
         self.__mestrics.add_metric(func_name, SrpcmetricsTypes.COUNTER_FAIL)
         self.__mestrics.add_metric(func_name, SrpcmetricsTypes.TIME)
 
@@ -114,7 +114,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     result = self.__call_func(request_tuple)
                     end_time = time.time()  # End time measurement
                     response = ("200", "", result)
-                    self.__mestrics.inc_counter_sucess(f"{{func_name}}")
+                    self.__mestrics.inc_counter_success(f"{{func_name}}")
                     self.__mestrics.record_time(f"{{func_name}}", end_time - start_time)
                 else:
                     raise SrpcProcUnvailException("The program cannot support the requested procedure.")
@@ -185,5 +185,5 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
     logger.info(f"Server stub successfully generated: {server_stub_file_name}")
     logger.info(
         f"You must implement the Class '{server_class_name}' that implements '{interface_name}', "
-        + f"inside '{module_name}.py' file."
+        f"inside '{module_name}.py' file."
     )

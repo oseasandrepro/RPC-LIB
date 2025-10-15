@@ -8,9 +8,10 @@ repos:
     rev: 7.1.1
     hooks:
       - id: flake8
+        args: ["--ignore=E501"]
 
   - repo: https://github.com/timothycrosley/isort
     rev: 5.13.2
     hooks:
       - id: isort
-        args: ["--profile", "black", "--line-length", "100"]
+        args: ["--profile", "black"]

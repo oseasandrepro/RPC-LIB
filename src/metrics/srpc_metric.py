@@ -18,7 +18,7 @@ class SrpcMetric(SrpcMetricsInterface):
     def add_metric(self, metric_name, metric_type):
         self.__mestrics.append((f"{metric_name}.{metric_type}"))
 
-    def inc_counter_sucess(self, metric_name):
+    def inc_counter_success(self, metric_name):
         if f"{metric_name}.{SrpcmetricsTypes.COUNTER_SUCCESS}" in self.__mestrics:
             self.__logger.info(f"{metric_name}.{SrpcmetricsTypes.COUNTER_SUCCESS}=1")
 
