@@ -49,7 +49,6 @@ def update_timer_metric(metric_name, value):
         timer_metrics[metric_name] = (min_val, max_val, total, avg)
 
 def generate_couter_table() -> Table:
-    """Make a new table."""
     table = Table()
     table.add_column("metric")
     table.add_column("value")
@@ -62,7 +61,6 @@ def generate_couter_table() -> Table:
     return table
 
 def generate_timer_table() -> Table:
-    """Make a new table."""
     table = Table()
     table.add_column("procedure")
     table.add_column("min(ms)")
