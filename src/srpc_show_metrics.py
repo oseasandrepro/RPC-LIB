@@ -44,7 +44,7 @@ def update_timer_metric(metric_name, value):
         total += value
         procedure_name = metric_name.split(".")[0]
         count = counter_metrics.get(
-            f"{procedure_name}.{SrpcmetricsTypes.COUNTER_SUCESS}", 0
+            f"{procedure_name}.{SrpcmetricsTypes.COUNTER_SUCCESS}", 0
         ) + counter_metrics.get(f"{procedure_name}.{SrpcmetricsTypes.COUNTER_FAIL}", 0)
         avg = total / count
         timer_metrics[metric_name] = (min_val, max_val, total, avg)
@@ -57,7 +57,7 @@ def generate_couter_table() -> Table:
 
     for metric_name, value in counter_metrics.items():
         metric_type = metric_name.split(".")[1]
-        color = "green" if metric_type == SrpcmetricsTypes.COUNTER_SUCESS else "red"
+        color = "green" if metric_type == SrpcmetricsTypes.COUNTER_SUCCESS else "red"
         table.add_row(f"[{color}]{metric_name}[/]", f"[{color}]{value}[/]")
 
     return table
@@ -76,7 +76,7 @@ def generate_timer_table() -> Table:
         whatColor = not whatColor
         procedure_name = metric_name.split(".")[0]
         min_val, max_val, total, avg = value
-        color = "cyan" if whatColor == True else "magenta"
+        color = "cyan" if whatColor is True else "magenta"
         table.add_row(
             f"[{color}]{procedure_name}[/]",
             f"[{color}]{min_val}[/]",
@@ -124,7 +124,7 @@ try:
             metric = line.split(" ")[4]
             metric_name = metric.split("=")[0]
             if (metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_FAIL) or (
-                metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_SUCESS
+                metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_SUCCESS
             ):
                 increment_counter(metric_name)
                 panel = Panel(generate_couter_table(), title="Counter Panel")
