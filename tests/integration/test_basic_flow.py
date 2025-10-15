@@ -49,8 +49,8 @@ def clean():
 
 
 def test_basic_rpc_flow():
-    clean()
     try:
+        clean()
         seting_up()
 
         stub_gen_input = f"{ROOT}/tests/test_resources/calc_interface.py\n{SERVER_HOST}"
