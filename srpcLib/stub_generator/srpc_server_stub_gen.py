@@ -1,14 +1,16 @@
 import logging
 
-from srpc_stub_utils import DEFAULT_BINDER_PORT
+from .srpc_stub_utils import DEFAULT_BINDER_PORT
 
 logger = logging.getLogger(__name__)
 log_path = "./srpc_server_metrics.log"
+lib_name = "srpcLib"
 
 
 def gen_server_stub(interface_file_name, interface_name):
     module_name = interface_file_name.split("_")[0]
     server_class_name = module_name[0].upper() + module_name[1:]
+
     code = f"""
 from concurrent.futures import ThreadPoolExecutor
 import socket
@@ -17,16 +19,16 @@ import inspect
 import time
 import os
 
-from metrics.srpc_metrics_types import SrpcmetricsTypes
-from metrics.srpc_metric import SrpcMetric
-from binder.srpc_server_binder import SrpcServerBinder
-from utils.srpc_serializer import SrpcSerializer
-from srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
-from interface.srpc_server_stub_interface import SrpcServerStubInterface
+from {lib_name}.metrics.srpc_metrics_types import SrpcmetricsTypes
+from {lib_name}.metrics.srpc_metric import SrpcMetric
+from {lib_name}.binder.srpc_server_binder import SrpcServerBinder
+from {lib_name}.utils.srpc_serializer import SrpcSerializer
+from {lib_name}.srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
+from {lib_name}.interface.srpc_server_stub_interface import SrpcServerStubInterface
 import logging
 
-from {interface_file_name.split('.')[0]} import {interface_name}
-from {module_name} import {server_class_name}
+from {module_name}.{module_name} import {server_class_name}
+from {module_name}.{module_name}_interface import {interface_name}
 
 class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
     def __init__(self):

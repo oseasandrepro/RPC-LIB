@@ -1,8 +1,9 @@
 import logging
 
-import srpc_stub_utils as stub_utils
+from .srpc_stub_utils import build_param_tuple, extract_params_from_method_sig
 
 logger = logging.getLogger(__name__)
+lib_name = "srpcLib"
 
 
 def gen_client_stub(
@@ -12,12 +13,12 @@ def gen_client_stub(
     code = f"""
 import socket
 import logging
-from utils.srpc_serializer import SrpcSerializer
-from binder.srpc_client_binder import SrpcClientBinder
-from srpc_exceptions import SrpcCallException, SrpcProcUnvailException
-from interface.srpc_client_stub_interface import SrpcClientStubInterface
+from {lib_name}.utils.srpc_serializer import SrpcSerializer
+from {lib_name}.binder.srpc_client_binder import SrpcClientBinder
+from {lib_name}.srpc_exceptions import SrpcCallException, SrpcProcUnvailException
+from {lib_name}.interface.srpc_client_stub_interface import SrpcClientStubInterface
 
-from {interface_file_name.split('.')[0]} import {interface_name}
+from {module_name}.{module_name}_interface import {interface_name}
 
 class _SrpcClientStub(SrpcClientStubInterface):
 
@@ -79,8 +80,8 @@ class Srpc{module_name.capitalize()}ClientStub({interface_name}):
 """
     methods = """"""
     for key, value in dictionary_of_methods.items():
-        parameters = stub_utils.extract_params_from_method_sig(value)
-        parameter_tuple = stub_utils.build_param_tuple(parameters)
+        parameters = extract_params_from_method_sig(value)
+        parameter_tuple = build_param_tuple(parameters)
         peace_of_code = f"""
     def {key}(self{',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
         try:
