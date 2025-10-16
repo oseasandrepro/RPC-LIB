@@ -23,6 +23,6 @@ class TestSrpcStubUtils:
         assert expected == result
 
     def testload_module_from_path(self):
-        path = "./tests/test_resources/mock_interface.py"
+        path = "tests/test_resources/calc/calc_interface.py"
         module = srpc_stub_utils.load_module_from_path(path)
-        assert module.__name__ == "mock_interface"
+        assert module.__name__ == "calc_interface"

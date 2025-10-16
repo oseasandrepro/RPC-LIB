@@ -2,7 +2,6 @@
 import logging
 import os
 import shutil
-import socket
 import subprocess
 import sys
 import time
@@ -11,71 +10,58 @@ from pathlib import Path
 import pytest
 
 logger = logging.getLogger(__name__)
-
-ROOT = Path(__file__).resolve().parent.parent.parent
-INTEGRATION_TEST_WORK_DIR = ROOT / "remoteExceptionPropagationTestWorkDir"
-STUB_GEN_SCRIPT = ROOT / "src/srpc_stub_gen.py"
-SERVER_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py"
-CLIENT_SCRIPT = f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client_divizion_by_zero.py"
-
-SERVER_HOST = socket.gethostbyname(socket.gethostname())
+SERVER_HOST = "127.0.1.1"
 SERVER_PORT = 500
 
+LIB_DIR = "srpcLib"
+LOG_FILE = "srpc_server_metrics.log"
+SERVER_STUB = "srpc_calc_server_stub.py"
+CLIENT_STUB = "srpc_calc_client_stub.py"
 
-def seting_up():
-    shutil.copytree("./src/binder", f"{INTEGRATION_TEST_WORK_DIR}/binder")
-    shutil.copytree("./src/interface", f"{INTEGRATION_TEST_WORK_DIR}/interface")
-    shutil.copytree("./src/utils", f"{INTEGRATION_TEST_WORK_DIR}/utils")
-    shutil.copytree("./src/metrics", f"{INTEGRATION_TEST_WORK_DIR}/metrics")
-    shutil.copy("./src/srpc_exceptions.py", f"{INTEGRATION_TEST_WORK_DIR}/srpc_exceptions.py")
-    shutil.copy(
-        "./tests/integration/run_rpc_server.py",
-        f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_server.py",
-    )
-    shutil.copy(
-        "./tests/integration/run_rpc_client_divizion_by_zero.py",
-        f"{INTEGRATION_TEST_WORK_DIR}/run_rpc_client_divizion_by_zero.py",
-    )
-    shutil.copy(
-        "./tests/test_resources/calc_interface.py",
-        f"{INTEGRATION_TEST_WORK_DIR}/calc_interface.py",
-    )
-    shutil.copy("./tests/test_resources/calc.py", f"{INTEGRATION_TEST_WORK_DIR}/calc.py")
+
+STUB_GEN_SCRIPT = "srpc_stub_gen.py"
+SERVER_SCRIPT = "run_rpc_server.py"
+CLIENT_SCRIPT = "run_rpc_client_divizion_by_zero.py"
+INTERFACE_FILE_PATH = "calc/calc_interface.py"
+MODULE_DIR = "tests/test_resources/calc/"
 
 
 def clean():
-    if os.path.exists(INTEGRATION_TEST_WORK_DIR):
-        shutil.rmtree(INTEGRATION_TEST_WORK_DIR)
+    files_to_delete = [LOG_FILE, SERVER_STUB, CLIENT_STUB, SERVER_SCRIPT, CLIENT_SCRIPT]
 
-    if os.path.exists("srpc_server_metrics.log"):
-        os.remove("srpc_server_metrics.log")
+    if os.path.exists(Path("calc/")):
+        shutil.rmtree("calc/")
+
+    for file in files_to_delete:
+        if os.path.exists(Path(file)):
+            os.remove(file)
 
 
 def test_dision_by_zero_exception():
     try:
         clean()
-        seting_up()
 
-        stub_gen_input = f"{ROOT}/tests/test_resources/calc_interface.py\n{SERVER_HOST}"
+        shutil.copytree(MODULE_DIR, "calc/")
+        shutil.copy("tests/integration/run_rpc_server.py", SERVER_SCRIPT)
+        shutil.copy("tests/integration/run_rpc_client_divizion_by_zero.py", CLIENT_SCRIPT)
+
+        stub_gen_input = f"{INTERFACE_FILE_PATH}\n{SERVER_HOST}"
         subprocess.run(
-            [sys.executable, str(STUB_GEN_SCRIPT)],
-            cwd=str(INTEGRATION_TEST_WORK_DIR),
+            [sys.executable, f"{LIB_DIR}/{STUB_GEN_SCRIPT}"],
             input=stub_gen_input,
             text=True,
             check=True,
         )
 
-        stub_client = INTEGRATION_TEST_WORK_DIR / "srpc_calc_client_stub.py"
-        stub_server = INTEGRATION_TEST_WORK_DIR / "srpc_calc_server_stub.py"
-        assert stub_client.exists()
-        assert stub_server.exists()
+        assert os.path.exists(SERVER_STUB)
+        assert os.path.exists(CLIENT_STUB)
 
         # launch server
         server_proc = subprocess.Popen(
             [sys.executable, SERVER_SCRIPT], stdout=None, stderr=None, text=True
         )
 
-        time.sleep(3)
+        time.sleep(0.3)
 
         # run client
         client_proc = subprocess.run(
