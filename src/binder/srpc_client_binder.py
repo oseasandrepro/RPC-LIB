@@ -12,12 +12,12 @@ class SrpcClientBinder(SrpcClientBinderInterface):
         self.__host = host
         self.__BINDER_PORT = 5000
 
-        self.logger = logging.getLogger(__name__)
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s | %(levelname)s | %(name)s : %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+        self.__logger = logging.getLogger(__name__)
+        self.__logger.setLevel(logging.INFO)
+        self.__console_handler = logging.StreamHandler()
+        self.__formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        self.__console_handler.setFormatter(self.__formatter)
+        self.__logger.addHandler(self.__console_handler)
 
     def binding_lookup(self) -> dict[str, int]:
         response = None
@@ -39,32 +39,31 @@ class SrpcClientBinder(SrpcClientBinderInterface):
 
             response = deserialized_response[2]
         except ConnectionRefusedError as e:
-            self.logger.error(str(e))
-            self.logger.error("Ensure the RPC Binder Server is running. Mission aborted.")
+            self.__logger.error(str(e))
+            self.__logger.error("Ensure the RPC Binder Server is running. Mission aborted.")
             exit(1)
         except socket.timeout as e:
-            self.logger.error(
+            self.__logger.error(
                 f"Connection timed out while trying to connect to the RPC Binder Server: {str(e)}"
             )
-            self.logger.error(
+            self.__logger.error(
                 "Ensure the RPC Binder Server is running and reachable. Mission aborted."
             )
             exit(1)
         except SrpcBinderRequestException as e:
-            self.logger.error(
+            self.__logger.error(
                 f"RPC Binder Server returns an error response during lookup: {str(e)}"
             )
-            self.logger.error(f"RPC Binder Server Error: {str(e)}")
-            self.logger.error("Mission aborted.")
+            self.__logger.error(f"RPC Binder Server Error: {str(e)}")
+            self.__logger.error("Mission aborted.")
             exit(1)
         except socket.error as e:
-            self.logger.error(f"Socket error: {str(e)}")
-            self.logger.error("Mission aborted.")
+            self.__logger.error(f"Socket error: {str(e)}")
+            self.__logger.error("Mission aborted.")
             exit(1)
         except OSError as e:
-            self.logger.error(f"OSError: {str(e)}")
-            self.logger.error("Mission aborted.")
+            self.__logger.error(f"OSError: {str(e)}")
+            self.__logger.error("Mission aborted.")
             exit(1)
         else:
-            self.logger.info("Binding lookup successful.")
             return response

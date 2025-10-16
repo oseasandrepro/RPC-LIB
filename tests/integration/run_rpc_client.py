@@ -1,4 +1,5 @@
 from srpc_calc_client_stub import SrpcCalcClientStub
+
 calc = SrpcCalcClientStub()
 a = 4
 b = 2
