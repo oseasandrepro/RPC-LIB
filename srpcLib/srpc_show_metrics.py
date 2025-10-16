@@ -3,13 +3,12 @@ import os
 import threading
 import time
 
+from metrics.srpc_metrics_types import SrpcmetricsTypes
 from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
-
-from metrics.srpc_metrics_types import SrpcmetricsTypes
 
 console = Console()
 layout = Layout(name="root")

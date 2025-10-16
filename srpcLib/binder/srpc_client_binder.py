@@ -1,9 +1,9 @@
 import logging
 import socket
 
-from interface.srpc_client_binder_interface import SrpcClientBinderInterface
-from srpc_exceptions import SrpcBinderRequestException
-from utils.srpc_serializer import SrpcSerializer
+from ..interface.srpc_client_binder_interface import SrpcClientBinderInterface
+from ..srpc_exceptions import SrpcBinderRequestException
+from ..utils.srpc_serializer import SrpcSerializer
 
 
 class SrpcClientBinder(SrpcClientBinderInterface):

@@ -3,8 +3,8 @@ import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-from interface.srpc_server_binder_interface import SrpcServerBinderInterface
-from utils.srpc_serializer import SrpcSerializer
+from ..interface.srpc_server_binder_interface import SrpcServerBinderInterface
+from ..utils.srpc_serializer import SrpcSerializer
 
 
 class SrpcServerBinder(SrpcServerBinderInterface):

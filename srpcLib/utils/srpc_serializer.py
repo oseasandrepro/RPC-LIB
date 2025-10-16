@@ -1,6 +1,6 @@
 import pickle
 
-from interface.srpc_serializer_interface import SrpcSerializerInterface
+from ..interface.srpc_serializer_interface import SrpcSerializerInterface
 
 
 class SrpcSerializer(SrpcSerializerInterface):

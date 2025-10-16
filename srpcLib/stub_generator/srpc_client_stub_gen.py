@@ -1,6 +1,6 @@
 import logging
 
-import stub_generator.srpc_stub_utils as stub_utils
+import srpc_stub_utils as stub_utils
 
 logger = logging.getLogger(__name__)
 
