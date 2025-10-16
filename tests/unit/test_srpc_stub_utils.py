@@ -1,4 +1,4 @@
-from src.stub_generator import srpc_stub_utils
+from srpcLib.stub_generator import srpc_stub_utils
 
 
 class TestSrpcStubUtils:
