@@ -84,7 +84,7 @@ class Srpc{module_name.capitalize()}ClientStub({interface_name}):
         peace_of_code = f"""
     def {key}(self{',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
         try:
-            return self.__client_stub.remote_call('{key}', ({parameter_tuple[1:-1] if parameter_tuple else ','}) )
+            return self.__client_stub.remote_call('{key}', ({parameter_tuple[1:-1] if parameter_tuple else ''}) )
         except SrpcCallException as e:
             exc_name = e.code #exception type
             exc_class = eval(exc_name)

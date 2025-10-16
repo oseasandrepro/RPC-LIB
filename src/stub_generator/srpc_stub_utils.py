@@ -93,4 +93,7 @@ def extract_params_from_method_sig(method_signature: str) -> list[str]:
 
 
 def build_param_tuple(params: list[str]) -> str:
-    return f"({', '.join(params)})"
+    if len(params) == 1:
+        return f"({params[0]},)"
+    else:
+        return f"({', '.join(params)})"

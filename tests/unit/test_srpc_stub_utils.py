@@ -15,6 +15,13 @@ class TestSrpcStubUtils:
         result = srpc_stub_utils.build_param_tuple(params)
         assert expected == result
 
+    def testBuildParamTupleWithOneElement(self):
+        params = []
+        params.append("param1")
+        expected = "(param1,)"
+        result = srpc_stub_utils.build_param_tuple(params)
+        assert expected == result
+
     def testload_module_from_path(self):
         path = "./tests/test_resources/mock_interface.py"
         module = srpc_stub_utils.load_module_from_path(path)
