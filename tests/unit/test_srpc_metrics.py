@@ -29,3 +29,7 @@ def test_srpc_metrics():
 
         metric = f.readline().split(" ")[4]
         assert metric == "test_function.time=123.0\n"
+
+        file_path = LOG_FILE
+        if file_path.exists():
+            file_path.unlink()
