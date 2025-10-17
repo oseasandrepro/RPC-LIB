@@ -2,6 +2,7 @@
 import logging
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -10,8 +11,7 @@ from pathlib import Path
 import pytest
 
 logger = logging.getLogger(__name__)
-SERVER_HOST = "127.0.1.1"
-SERVER_PORT = 5000
+SERVER_HOST = socket.gethostbyname(socket.gethostname())
 
 LIB_DIR = "srpcLib"
 LOG_FILE = "srpc_server_metrics.log"
@@ -45,6 +45,8 @@ def test_division_by_zero_exception():
         shutil.copy("tests/integration/run_rpc_server.py", SERVER_SCRIPT)
         shutil.copy("tests/integration/run_rpc_client_divizion_by_zero.py", CLIENT_SCRIPT)
 
+        time.sleep(1)
+
         stub_gen_input = f"{INTERFACE_FILE_PATH}\n{SERVER_HOST}"
         subprocess.run(
             [sys.executable, f"{LIB_DIR}/{STUB_GEN_SCRIPT}"],
@@ -76,6 +78,7 @@ def test_division_by_zero_exception():
     finally:
         try:
             server_proc.terminate()
-        except Exception:
-            pass
+            server_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            server_proc.kill()
         clean()

@@ -2,6 +2,7 @@
 import logging
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -9,9 +10,7 @@ import time
 import pytest
 
 logger = logging.getLogger(__name__)
-SERVER_HOST = "127.0.1.1"
-SERVER_PORT = 5000
-
+SERVER_HOST = socket.gethostbyname(socket.gethostname())
 
 LOG_FILE = "srpc_server_metrics.log"
 SERVER_STUB = "srpc_calc_server_stub.py"
@@ -45,6 +44,8 @@ def test_basic_rpc_flow():
         shutil.copy("./tests/integration/run_rpc_server.py", SERVER_SCRIPT)
         shutil.copy("./tests/integration/run_rpc_client.py", CLIENT_SCRIPT)
 
+        time.sleep(1)
+
         stub_gen_input = f"{INTERFACE_FILE_PATH}\n{SERVER_HOST}"
         subprocess.run(
             [sys.executable, f"{LIB_DIR}/{STUB_GEN_SCRIPT}"],
@@ -76,6 +77,7 @@ def test_basic_rpc_flow():
     finally:
         try:
             server_proc.terminate()
-        except Exception:
-            pass
+            server_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            server_proc.kill()
         clean()
