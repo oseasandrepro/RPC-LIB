@@ -1,7 +1,7 @@
 import logging
 
-from interface.srpc_metrics_interface import SrpcMetricsInterface
-from metrics.srpc_metrics_types import SrpcmetricsTypes
+from ..interface.srpc_metrics_interface import SrpcMetricsInterface
+from .srpc_metrics_types import SrpcmetricsTypes
 
 
 class SrpcMetric(SrpcMetricsInterface):

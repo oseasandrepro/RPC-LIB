@@ -1,4 +1,4 @@
-from calc_interface import CalcInterface
+from .calc_interface import CalcInterface
 
 
 class Calc(CalcInterface):

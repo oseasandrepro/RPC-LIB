@@ -1,14 +1,16 @@
 import logging
 
-from stub_generator.srpc_stub_utils import DEFAULT_BINDER_PORT
+from ..utils.srpc_stub_util import DEFAULT_BINDER_PORT
 
 logger = logging.getLogger(__name__)
 log_path = "./srpc_server_metrics.log"
+lib_name = "srpcLib"
 
 
 def gen_server_stub(interface_file_name, interface_name):
     module_name = interface_file_name.split("_")[0]
     server_class_name = module_name[0].upper() + module_name[1:]
+
     code = f"""
 from concurrent.futures import ThreadPoolExecutor
 import socket
@@ -17,25 +19,26 @@ import inspect
 import time
 import os
 
-from metrics.srpc_metrics_types import SrpcmetricsTypes
-from metrics.srpc_metric import SrpcMetric
-from binder.srpc_server_binder import SrpcServerBinder
-from utils.srpc_serializer import SrpcSerializer
-from srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
-from interface.srpc_server_stub_interface import SrpcServerStubInterface
+from {lib_name}.metrics.srpc_metrics_types import SrpcmetricsTypes
+from {lib_name}.metrics.srpc_metric import SrpcMetric
+from {lib_name}.binder.srpc_server_binder import SrpcServerBinder
+from {lib_name}.utils.srpc_serializer import SrpcSerializer
+from {lib_name}.srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
+from {lib_name}.interface.srpc_server_stub_interface import SrpcServerStubInterface
+from {lib_name}.utils.srpc_network_util import get_lan_ip_or_localhost
 import logging
 
-from {interface_file_name.split('.')[0]} import {interface_name}
-from {module_name} import {server_class_name}
+from {module_name}.{module_name} import {server_class_name}
+from {module_name}.{module_name}_interface import {interface_name}
 
 class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
     def __init__(self):
         self.__mestrics = SrpcMetric("{log_path}")
 
-        self.__hostname = socket.gethostname()
-        self.__host = socket.gethostbyname(self.__hostname)
+        self.__host = get_lan_ip_or_localhost()
         self.__binder = SrpcServerBinder(self.__host)
         self.__BINDER_PORT = {DEFAULT_BINDER_PORT}
+
         self.__lib_procedures_name = self.__get_lib_procedures_name()
         self.__executor = ThreadPoolExecutor(max_workers=10)
         self.__threads = []
@@ -160,7 +163,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     )
                 self.__threads.append(t)
                 t.start()
-            self.__logger.info("SRPC server started, press Ctrl+C to stop")
+            self.__logger.info(f"SRPC server started [tcp-{{self.__host}}-{DEFAULT_BINDER_PORT}]. press Ctrl+C to stop")
             stop_event.wait()
         except KeyboardInterrupt:
             self.stop()

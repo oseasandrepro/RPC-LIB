@@ -1,5 +1,5 @@
-from metrics.srpc_metric import SrpcMetric
-from metrics.srpc_metrics_types import SrpcmetricsTypes
+from srpcLib.metrics.srpc_metric import SrpcMetric
+from srpcLib.metrics.srpc_metrics_types import SrpcmetricsTypes
 
 LOG_PATH = "test_metrics.log"
 
