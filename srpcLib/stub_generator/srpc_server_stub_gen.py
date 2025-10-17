@@ -1,6 +1,6 @@
 import logging
 
-from .srpc_stub_utils import DEFAULT_BINDER_PORT
+from ..utils.srpc_stub_util import DEFAULT_BINDER_PORT
 
 logger = logging.getLogger(__name__)
 log_path = "./srpc_server_metrics.log"

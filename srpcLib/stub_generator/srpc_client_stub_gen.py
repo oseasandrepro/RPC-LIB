@@ -1,6 +1,6 @@
 import logging
 
-from .srpc_stub_utils import build_param_tuple, extract_params_from_method_sig
+from ..utils.srpc_stub_util import build_param_tuple, extract_params_from_method_sig
 
 logger = logging.getLogger(__name__)
 lib_name = "srpcLib"

@@ -4,7 +4,7 @@ from os import path
 
 from ..stub_generator.srpc_client_stub_gen import gen_client_stub
 from ..stub_generator.srpc_server_stub_gen import gen_server_stub
-from ..stub_generator.srpc_stub_utils import (
+from ..utils.srpc_stub_util import (
     get_interface_from_module,
     get_methodname_signature_map_from_interface,
     load_module_from_path,
@@ -20,11 +20,14 @@ def configure_logging():
 
 
 parser = argparse.ArgumentParser(
-    prog="srpc_stub_gen", description="Generate server and client stubs, from a python interface."
+    prog="srpc_stub_gen",
+    description="Generate server and client stubs, from a python interface.",
 )
 
 parser.add_argument("path", type=str, help="Path of the python interface")
-parser.add_argument("ip", type=str, help="Ip-adress of the server that will provide de service")
+parser.add_argument(
+    "ip", type=str, help="Ip-adress of the server that will provide de service"
+)
 
 
 if __name__ == "__main__":
