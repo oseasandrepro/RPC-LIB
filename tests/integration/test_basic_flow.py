@@ -20,7 +20,7 @@ LIB_DIR = "srpcLib"
 
 SERVER_SCRIPT = "run_rpc_server.py"
 CLIENT_SCRIPT = "run_rpc_client.py"
-STUB_GEN_SCRIPT = "srpc_stub_gen.py"
+STUB_GEN_SCRIPT = "srpcLib.tools.srpc_stub_gen"
 INTERFACE_FILE_PATH = "calc/calc_interface.py"
 MODULE_DIR = "tests/test_resources/calc/"
 
@@ -44,24 +44,14 @@ def test_basic_rpc_flow():
         shutil.copy("./tests/integration/run_rpc_server.py", SERVER_SCRIPT)
         shutil.copy("./tests/integration/run_rpc_client.py", CLIENT_SCRIPT)
 
-        time.sleep(1)
-
-        stub_gen_input = f"{INTERFACE_FILE_PATH}\n{SERVER_HOST}"
-        subprocess.run(
-            [sys.executable, f"{LIB_DIR}/{STUB_GEN_SCRIPT}"],
-            input=stub_gen_input,
-            text=True,
-            check=True,
-        )
-
-        assert os.path.exists(CLIENT_STUB)
-        assert os.path.exists(SERVER_STUB)
-
         # launch server
         server_proc = subprocess.Popen(
-            [sys.executable, f"{SERVER_SCRIPT}"], stdout=None, stderr=None, text=True
+            [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_FILE_PATH}", f"{SERVER_HOST}"]
         )
 
+        time.sleep(1)
+        assert os.path.exists(CLIENT_STUB)
+        assert os.path.exists(SERVER_STUB)
         time.sleep(0.3)
 
         # run client
@@ -72,12 +62,9 @@ def test_basic_rpc_flow():
         expected_output = ["6", "8", "2", "2.0"]
         assert client_proc.stdout.splitlines() == expected_output
 
+        server_proc.kill()
+        server_proc.wait(timeout=5)
     except Exception as e:
         pytest.fail(f"Error during integration test: {e}")
     finally:
-        try:
-            server_proc.terminate()
-            server_proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            server_proc.kill()
         clean()

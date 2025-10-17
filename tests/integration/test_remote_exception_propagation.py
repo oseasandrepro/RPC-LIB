@@ -19,7 +19,7 @@ SERVER_STUB = "srpc_calc_server_stub.py"
 CLIENT_STUB = "srpc_calc_client_stub.py"
 
 
-STUB_GEN_SCRIPT = "srpc_stub_gen.py"
+STUB_GEN_SCRIPT = "srpcLib.tools.srpc_stub_gen"
 SERVER_SCRIPT = "run_rpc_server.py"
 CLIENT_SCRIPT = "run_rpc_client_divizion_by_zero.py"
 INTERFACE_FILE_PATH = "calc/calc_interface.py"
@@ -45,25 +45,15 @@ def test_division_by_zero_exception():
         shutil.copy("tests/integration/run_rpc_server.py", SERVER_SCRIPT)
         shutil.copy("tests/integration/run_rpc_client_divizion_by_zero.py", CLIENT_SCRIPT)
 
-        time.sleep(1)
-
-        stub_gen_input = f"{INTERFACE_FILE_PATH}\n{SERVER_HOST}"
-        subprocess.run(
-            [sys.executable, f"{LIB_DIR}/{STUB_GEN_SCRIPT}"],
-            input=stub_gen_input,
-            text=True,
-            check=True,
-        )
-
-        assert os.path.exists(SERVER_STUB)
-        assert os.path.exists(CLIENT_STUB)
-
         # launch server
         server_proc = subprocess.Popen(
-            [sys.executable, SERVER_SCRIPT], stdout=None, stderr=None, text=True
+            [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_FILE_PATH}", f"{SERVER_HOST}"]
         )
 
-        time.sleep(0.5)
+        time.sleep(1)
+        assert os.path.exists(CLIENT_STUB)
+        assert os.path.exists(SERVER_STUB)
+        time.sleep(0.3)
 
         # run client
         client_proc = subprocess.run(
@@ -73,12 +63,10 @@ def test_division_by_zero_exception():
         expected_output = "ZeroDivisionError: division by zero"
         assert client_proc.stdout.splitlines()[-1] == expected_output
 
+        server_proc.kill()
+        server_proc.wait(timeout=5)
     except Exception as e:
         pytest.fail(f"Error during integration test: {e}")
     finally:
-        try:
-            server_proc.terminate()
-            server_proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            server_proc.kill()
         clean()
+        pass
