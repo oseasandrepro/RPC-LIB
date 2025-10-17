@@ -10,7 +10,7 @@ import time
 import pytest
 
 logger = logging.getLogger(__name__)
-SERVER_HOST = "127.0.1.1"
+SERVER_HOST = socket.gethostbyname(socket.gethostname())
 
 LOG_FILE = "srpc_server_metrics.log"
 SERVER_STUB = "srpc_calc_server_stub.py"

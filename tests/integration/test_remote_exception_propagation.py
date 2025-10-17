@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 logger = logging.getLogger(__name__)
-SERVER_HOST = "127.0.1.1"
+SERVER_HOST = socket.gethostbyname(socket.gethostname())
 
 LIB_DIR = "srpcLib"
 LOG_FILE = "srpc_server_metrics.log"
