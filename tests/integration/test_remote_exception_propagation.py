@@ -11,7 +11,7 @@ import pytest
 
 logger = logging.getLogger(__name__)
 SERVER_HOST = "127.0.1.1"
-SERVER_PORT = 500
+SERVER_PORT = 5000
 
 LIB_DIR = "srpcLib"
 LOG_FILE = "srpc_server_metrics.log"
@@ -37,7 +37,7 @@ def clean():
             os.remove(file)
 
 
-def test_dision_by_zero_exception():
+def test_division_by_zero_exception():
     try:
         clean()
 
@@ -61,7 +61,7 @@ def test_dision_by_zero_exception():
             [sys.executable, SERVER_SCRIPT], stdout=None, stderr=None, text=True
         )
 
-        time.sleep(0.3)
+        time.sleep(0.5)
 
         # run client
         client_proc = subprocess.run(
@@ -76,7 +76,6 @@ def test_dision_by_zero_exception():
     finally:
         try:
             server_proc.terminate()
-            server_proc.wait(timeout=3)
         except Exception:
             pass
         clean()

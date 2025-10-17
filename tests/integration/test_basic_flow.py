@@ -10,7 +10,7 @@ import pytest
 
 logger = logging.getLogger(__name__)
 SERVER_HOST = "127.0.1.1"
-SERVER_PORT = 500
+SERVER_PORT = 5000
 
 
 LOG_FILE = "srpc_server_metrics.log"
@@ -76,7 +76,6 @@ def test_basic_rpc_flow():
     finally:
         try:
             server_proc.terminate()
-            server_proc.wait(timeout=3)
         except Exception:
             pass
         clean()
