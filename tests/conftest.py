@@ -2,9 +2,8 @@ def pytest_collection_modifyitems(items):
     """Modifies test items in place to ensure test modules run in a given order."""
     MODULE_ORDER = [
         "tests.unit.test_srpc_stub_utils",
-        "tests.integration.test_basic_flow",
-        "tests.integration.test_srpc_metrics",
-        "tests.integration.test_remote_exception_propagation",
+        "tests.integration.test_simple_project",
+        "tests.unit.test_srpc_metrics",
     ]
     module_mapping = {item: item.module.__name__ for item in items}
 
