@@ -9,8 +9,10 @@ import time
 
 import pytest
 
+from srpcLib.utils.srpc_network_util import get_lan_ip_or_localhost
+
 logger = logging.getLogger(__name__)
-SERVER_HOST = socket.gethostbyname(socket.gethostname())
+SERVER_HOST = get_lan_ip_or_localhost()
 
 LOG_FILE = "srpc_server_metrics.log"
 SERVER_STUB = "srpc_calc_server_stub.py"
@@ -68,16 +70,19 @@ def test_basic_rpc_flow():
         )
 
         # lunch server
-        server_proc = subprocess.Popen([sys.executable, f"{CLIENT_SCRIPT}"])
+        server_proc = subprocess.Popen([sys.executable, f"{SERVER_SCRIPT}"])
 
         assert os.path.exists(CLIENT_STUB)
         assert os.path.exists(SERVER_STUB)
 
-        wait_for_server(SERVER_HOST, 5000)
+        wait_for_server(SERVER_HOST, 5000, 10)
 
         # run client
         client_proc = subprocess.run(
-            [sys.executable, f"{CLIENT_SCRIPT}"], text=True, capture_output=True, check=True
+            [sys.executable, f"{CLIENT_SCRIPT}"],
+            text=True,
+            capture_output=True,
+            check=True,
         )
 
         expected_output = ["6", "8", "2", "2.0"]

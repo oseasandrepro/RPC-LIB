@@ -10,8 +10,10 @@ from pathlib import Path
 
 import pytest
 
+from srpcLib.utils.srpc_network_util import get_lan_ip_or_localhost
+
 logger = logging.getLogger(__name__)
-SERVER_HOST = socket.gethostbyname(socket.gethostname())
+SERVER_HOST = get_lan_ip_or_localhost()
 
 LIB_DIR = "srpcLib"
 LOG_FILE = "srpc_server_metrics.log"
@@ -55,7 +57,9 @@ def test_division_by_zero_exception():
 
         shutil.copytree(MODULE_DIR, "calc/")
         shutil.copy("tests/integration/run_rpc_server.py", SERVER_SCRIPT)
-        shutil.copy("tests/integration/run_rpc_client_divizion_by_zero.py", CLIENT_SCRIPT)
+        shutil.copy(
+            "tests/integration/run_rpc_client_divizion_by_zero.py", CLIENT_SCRIPT
+        )
 
         # Gen Stubs
         subprocess.run(
@@ -70,7 +74,7 @@ def test_division_by_zero_exception():
         )
 
         # lunch server
-        server_proc = subprocess.Popen([sys.executable, f"{CLIENT_SCRIPT}"])
+        server_proc = subprocess.Popen([sys.executable, f"{SERVER_SCRIPT}"])
 
         assert os.path.exists(CLIENT_STUB)
         assert os.path.exists(SERVER_STUB)
