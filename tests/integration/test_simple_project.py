@@ -56,13 +56,7 @@ def generate_stubs():
     Run the stub generator as a CLI tool inside test_project.
     """
     result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            f"{STUB_GEN_SCRIPT}",
-            f"{INTERFACE_DEF}",
-            f"{SERVER_HOST}",
-        ],
+        [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_DEF}"],
         cwd=TEST_PROJECT,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

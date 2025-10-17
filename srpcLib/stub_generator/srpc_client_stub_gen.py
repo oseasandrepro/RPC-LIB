@@ -6,9 +6,7 @@ logger = logging.getLogger(__name__)
 lib_name = "srpcLib"
 
 
-def gen_client_stub(
-    interface_file_name, interface_name, dictionary_of_methods: dict, server_hostname
-):
+def gen_client_stub(interface_file_name, interface_name, dictionary_of_methods: dict):
     module_name = interface_file_name.split("_")[0]
     code = f"""
 import socket
@@ -22,9 +20,9 @@ from {module_name}.{module_name}_interface import {interface_name}
 
 class _SrpcClientStub(SrpcClientStubInterface):
 
-    def __init__(self):
+    def __init__(self, server_host):
         self.__serializer = SrpcSerializer()
-        self.__HOST = "{server_hostname}"
+        self.__server_host = server_host
         self.__functions = {{}}
         self.__bind()
 
@@ -36,13 +34,13 @@ class _SrpcClientStub(SrpcClientStubInterface):
         self.__logger.addHandler(self.__console_handler)
 
     def __bind(self):
-        binder = SrpcClientBinder(self.__HOST)
+        binder = SrpcClientBinder(self.__server_host)
         self.__functions = binder.binding_lookup()
 
     def remote_call(self, func_name, parameters: tuple):
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            socket_cli.connect((self.__HOST, self.__functions[func_name]))
+            socket_cli.connect((self.__server_host, self.__functions[func_name]))
 
             request = (func_name, *parameters)
             serialized_request = self.__serializer.serialize(request)
@@ -75,8 +73,8 @@ class _SrpcClientStub(SrpcClientStubInterface):
             self.__logger.error(f"OS error during RPC call: {{e}}")
 
 class Srpc{module_name.capitalize()}ClientStub({interface_name}):
-    def __init__(self):
-        self.__client_stub = _SrpcClientStub()
+    def __init__(self, server_host='127.0.0.1'):
+        self.__client_stub = _SrpcClientStub(server_host)
 """
     methods = """"""
     for key, value in dictionary_of_methods.items():

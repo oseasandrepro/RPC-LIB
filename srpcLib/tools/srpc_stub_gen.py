@@ -25,10 +25,6 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument("path", type=str, help="Path of the python interface")
-parser.add_argument(
-    "ip", type=str, help="Ip-adress of the server that will provide de service"
-)
-
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -42,6 +38,5 @@ if __name__ == "__main__":
         file_name,
         interface_name,
         get_methodname_signature_map_from_interface(interface),
-        args.ip,
     )
     gen_server_stub(file_name, interface_name)
