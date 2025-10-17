@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 logger = logging.getLogger(__name__)
-SERVER_HOST = socket.gethostbyname(socket.gethostname())
+SERVER_HOST = "127.0.1.1"
 
 LIB_DIR = "srpcLib"
 LOG_FILE = "srpc_server_metrics.log"
@@ -37,24 +37,45 @@ def clean():
             os.remove(file)
 
 
+def wait_for_server(host, port, timeout=5.0):
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=0.5):
+                return True
+        except (ConnectionRefusedError, OSError):
+            time.sleep(0.1)
+    raise RuntimeError("Server did not start in time")
+
+
 def test_division_by_zero_exception():
     try:
+        time.sleep(5)
         clean()
 
         shutil.copytree(MODULE_DIR, "calc/")
         shutil.copy("tests/integration/run_rpc_server.py", SERVER_SCRIPT)
         shutil.copy("tests/integration/run_rpc_client_divizion_by_zero.py", CLIENT_SCRIPT)
 
-        # launch server
-        server_proc = subprocess.Popen(
-            [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_FILE_PATH}", f"{SERVER_HOST}"]
+        # Gen Stubs
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                f"{STUB_GEN_SCRIPT}",
+                f"{INTERFACE_FILE_PATH}",
+                f"{SERVER_HOST}",
+            ],
+            check=True,
         )
 
-        time.sleep(1)
+        # lunch server
+        server_proc = subprocess.Popen([sys.executable, f"{CLIENT_SCRIPT}"])
+
         assert os.path.exists(CLIENT_STUB)
         assert os.path.exists(SERVER_STUB)
-        time.sleep(0.3)
 
+        wait_for_server(SERVER_HOST, 5000)
         # run client
         client_proc = subprocess.run(
             [sys.executable, CLIENT_SCRIPT], text=True, capture_output=True, check=True
@@ -69,4 +90,3 @@ def test_division_by_zero_exception():
         pytest.fail(f"Error during integration test: {e}")
     finally:
         clean()
-        pass

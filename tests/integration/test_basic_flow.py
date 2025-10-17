@@ -10,7 +10,7 @@ import time
 import pytest
 
 logger = logging.getLogger(__name__)
-SERVER_HOST = socket.gethostbyname(socket.gethostname())
+SERVER_HOST = "127.0.1.1"
 
 LOG_FILE = "srpc_server_metrics.log"
 SERVER_STUB = "srpc_calc_server_stub.py"
@@ -36,6 +36,17 @@ def clean():
             os.remove(file)
 
 
+def wait_for_server(host, port, timeout=5.0):
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            with socket.create_connection((host, port), timeout=0.5):
+                return True
+        except (ConnectionRefusedError, OSError):
+            time.sleep(0.1)
+    raise RuntimeError("Server did not start in time")
+
+
 def test_basic_rpc_flow():
     try:
         clean()
@@ -44,15 +55,25 @@ def test_basic_rpc_flow():
         shutil.copy("./tests/integration/run_rpc_server.py", SERVER_SCRIPT)
         shutil.copy("./tests/integration/run_rpc_client.py", CLIENT_SCRIPT)
 
-        # launch server
-        server_proc = subprocess.Popen(
-            [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_FILE_PATH}", f"{SERVER_HOST}"]
+        # Gen Stubs
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                f"{STUB_GEN_SCRIPT}",
+                f"{INTERFACE_FILE_PATH}",
+                f"{SERVER_HOST}",
+            ],
+            check=True,
         )
 
-        time.sleep(1)
+        # lunch server
+        server_proc = subprocess.Popen([sys.executable, f"{CLIENT_SCRIPT}"])
+
         assert os.path.exists(CLIENT_STUB)
         assert os.path.exists(SERVER_STUB)
-        time.sleep(0.3)
+
+        wait_for_server(SERVER_HOST, 5000)
 
         # run client
         client_proc = subprocess.run(
@@ -62,8 +83,11 @@ def test_basic_rpc_flow():
         expected_output = ["6", "8", "2", "2.0"]
         assert client_proc.stdout.splitlines() == expected_output
 
-        server_proc.kill()
+        time.sleep(1)
+        server_proc.terminate()
         server_proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        server_proc.kill()
     except Exception as e:
         pytest.fail(f"Error during integration test: {e}")
     finally:
