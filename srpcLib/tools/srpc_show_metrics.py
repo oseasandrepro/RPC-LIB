@@ -1,14 +1,16 @@
+import argparse
 import logging
 import os
 import threading
 import time
 
-from metrics.srpc_metrics_types import SrpcmetricsTypes
 from rich.console import Console
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
+
+from ..metrics.srpc_metrics_types import SrpcmetricsTypes
 
 console = Console()
 layout = Layout(name="root")
@@ -17,7 +19,6 @@ counter_metrics = {}
 timer_metrics = {}
 
 stop_event = threading.Event()
-log_path = "srpc_server_metrics.log"
 logger = logging.getLogger("srpc_show_metrics")
 logger.setLevel(logging.INFO)
 console_handler = logging.StreamHandler()
@@ -114,26 +115,36 @@ layout["left"].update(Panel("Counter Panel"))
 layout["right"].update(Panel("Time Panel"))
 
 
-try:
-    # Live refresh
-    with Live(layout, refresh_per_second=4, screen=True):
-        logfile = open(log_path, "r")
-        loglines = follow(logfile)
-        for line in loglines:
-            metric = line.split(" ")[4]
-            metric_name = metric.split("=")[0]
-            if (metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_FAIL) or (
-                metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_SUCCESS
-            ):
-                increment_counter(metric_name)
-                panel = Panel(generate_couter_table(), title="Counter Panel")
-                layout["left"].update(panel)
-            else:
-                value = float(metric.split("=")[1])
-                update_timer_metric(metric_name, value)
-                panel = Panel(generate_timer_table(), title="Time Panel")
-                layout["right"].update(panel)
-    stop_event.wait()
-except KeyboardInterrupt:
-    stop_event.set()
-    logger.info("Exiting metrics dashboard.")
+parser = argparse.ArgumentParser(
+    prog="srpc_show_metric", description="Parse and show metrics of srpc server side."
+)
+
+parser.add_argument("path", type=str, help="Path of the log file")
+
+if __name__ == "__main__":
+    # log_path = "srpc_server_metrics.log"
+    args = parser.parse_args()
+    log_path = args.path
+    try:
+        # Live refresh
+        with Live(layout, refresh_per_second=4, screen=True):
+            logfile = open(log_path, "r")
+            loglines = follow(logfile)
+            for line in loglines:
+                metric = line.split(" ")[4]
+                metric_name = metric.split("=")[0]
+                if (metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_FAIL) or (
+                    metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_SUCCESS
+                ):
+                    increment_counter(metric_name)
+                    panel = Panel(generate_couter_table(), title="Counter Panel")
+                    layout["left"].update(panel)
+                else:
+                    value = float(metric.split("=")[1])
+                    update_timer_metric(metric_name, value)
+                    panel = Panel(generate_timer_table(), title="Time Panel")
+                    layout["right"].update(panel)
+        stop_event.wait()
+    except KeyboardInterrupt:
+        stop_event.set()
+        logger.info("Exiting metrics dashboard.")
