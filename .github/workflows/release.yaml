@@ -3,7 +3,7 @@ name: Build and Release [Python 3.13]
 on:
   push:
     branches:
-      - duble-da-main
+      - main
 
 jobs:
   build-release:
