@@ -1,4 +1,4 @@
-name: Build and Test [Python 3.13]
+name: Continuous Integration [Python 3.13]
 
 on: push
 jobs:
@@ -8,7 +8,9 @@ jobs:
       matrix:
         python-version: [3.13]
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
