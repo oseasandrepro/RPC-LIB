@@ -3,3 +3,4 @@ pre-commit>=4.3.0
 black>=23.9.1
 flake8>=3.4.0
 isort>=5.13.2
+rich>=13.7.0

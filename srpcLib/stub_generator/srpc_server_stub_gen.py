@@ -1,13 +1,16 @@
 import logging
 
-from stub_generator.srpc_stub_utils import DEFAULT_BINDER_PORT
+from ..utils.srpc_stub_util import DEFAULT_BINDER_PORT
 
 logger = logging.getLogger(__name__)
+log_path = "./srpc_server_metrics.log"
+lib_name = "srpcLib"
 
 
 def gen_server_stub(interface_file_name, interface_name):
-    server_module_name = interface_file_name.split("_")[0]
-    server_class_name = server_module_name[0].upper() + server_module_name[1:]
+    module_name = interface_file_name.split("_")[0]
+    server_class_name = module_name[0].upper() + module_name[1:]
+
     code = f"""
 from concurrent.futures import ThreadPoolExecutor
 import socket
@@ -16,32 +19,46 @@ import inspect
 import time
 import os
 
-from utils.srpc_serializer import SrpcSerializer
-from srpc_exceptions import RpcBinderRequestException, RpcProcUnvailException
-from interface.srpc_server_stub_interface import SrpcServerStubInterface
+from {lib_name}.metrics.srpc_metrics_types import SrpcmetricsTypes
+from {lib_name}.metrics.srpc_metric import SrpcMetric
+from {lib_name}.binder.srpc_server_binder import SrpcServerBinder
+from {lib_name}.utils.srpc_serializer import SrpcSerializer
+from {lib_name}.srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
+from {lib_name}.interface.srpc_server_stub_interface import SrpcServerStubInterface
+from {lib_name}.utils.srpc_network_util import get_lan_ip_or_localhost
 import logging
 
-from {interface_file_name.split('.')[0]} import {interface_name}
-from {server_module_name} import {server_class_name}
+from {module_name}.{module_name} import {server_class_name}
+from {module_name}.{module_name}_interface import {interface_name}
 
-class RpcServerStub(SrpcServerStubInterface):
+class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
+    def __init__(self):
+        self.__mestrics = SrpcMetric("{log_path}")
 
-    def __init__(self, host='0.0.0.0'):
+        self.__host = get_lan_ip_or_localhost()
+        self.__binder = SrpcServerBinder(self.__host)
         self.__BINDER_PORT = {DEFAULT_BINDER_PORT}
+
         self.__lib_procedures_name = self.__get_lib_procedures_name()
-        self.__host = host
         self.__executor = ThreadPoolExecutor(max_workers=10)
         self.__threads = []
         self.__stop_event = threading.Event()
         self.__serializer = SrpcSerializer()
         self.__lib_procedures = {server_class_name}()
         self.__check_implements_interface(self.__lib_procedures, {interface_name})
-        self.logger = logging.getLogger(__name__)
-        logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(name)s : %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S")
 
+        self.__logger = logging.getLogger(__name__)
+        self.__logger.setLevel(logging.INFO)
+        self.__console_handler = logging.StreamHandler()
+        self.__formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+        self.__console_handler.setFormatter(self.__formatter)
+        self.__logger.addHandler(self.__console_handler)
+
+
+    def __set_metrics(self, func_name):
+        self.__mestrics.add_metric(func_name, SrpcmetricsTypes.COUNTER_SUCCESS)
+        self.__mestrics.add_metric(func_name, SrpcmetricsTypes.COUNTER_FAIL)
+        self.__mestrics.add_metric(func_name, SrpcmetricsTypes.TIME)
 
     def __get_lib_procedures_name(self):
         return [name for name, member in inspect.getmembers({interface_name}, predicate=inspect.isfunction)]
@@ -49,7 +66,7 @@ class RpcServerStub(SrpcServerStubInterface):
     def __check_implements_interface(self, obj, interface):
         if not isinstance(obj, interface):
             logging.error(f"Object of type {{type(obj).__name__}} must implement interface {{interface.__name__}}")
-            self.logger.error("Mission aborted.")
+            self.__logger.error("Mission aborted.")
             os._exit(1)
 
     def __call_func(self, t: tuple):
@@ -60,6 +77,8 @@ class RpcServerStub(SrpcServerStubInterface):
             return None
 
     def __register_func_in_binder(self, func_name, port):
+        #setting metric for the function
+        self.__set_metrics(func_name)
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socket_cli.connect((self.__host, self.__BINDER_PORT))
@@ -71,18 +90,18 @@ class RpcServerStub(SrpcServerStubInterface):
             deserialized_response = self.__serializer.deserialize(serialized_response)
 
             if deserialized_response[0] != "200":
-                raise RpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
+                raise SrpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
 
             socket_cli.close()
         except socket.timeout:
-            self.logger.error(f"Timeout occurred during RPC bind for function [{{func_name}}].")
+            self.__logger.error(f"Timeout occurred during RPC bind for function [{{func_name}}].")
         except OSError as e:
-            self.logger.error(f"An error occurred during function [{{func_name}}] registration: {{e}}")
-            self.logger.error("Mission aborted.")
+            self.__logger.error(f"An error occurred during function [{{func_name}}] registration: {{e}}")
+            self.__logger.error("Mission aborted.")
             os._exit(1)
-        except RpcBinderRequestException as e:
-            self.logger.error(f"RPC Binder returns an error response during function [{{func_name}}] registration: {{e}}")
-            self.logger.error("Mission aborted.")
+        except SrpcBinderRequestException as e:
+            self.__logger.error(f"RPC Binder returns an error response during function [{{func_name}}] registration: {{e}}")
+            self.__logger.error("Mission aborted.")
             os._exit(1)
 
 
@@ -93,17 +112,22 @@ class RpcServerStub(SrpcServerStubInterface):
                 request_tuple = self.__serializer.deserialize(msg)
 
                 if isinstance(request_tuple, tuple) and request_tuple[0] == func_name:
-                    self.logger.info(f"Request: {{request_tuple}} from: {{addr[0]}}")
+                    self.__logger.info(f"Request: {{request_tuple}} from: {{addr[0]}}")
+                    start_time = time.time()  # Start time measurement
                     result = self.__call_func(request_tuple)
+                    end_time = time.time()  # End time measurement
                     response = ("200", "", result)
+                    self.__mestrics.inc_counter_success(f"{{func_name}}")
+                    self.__mestrics.record_time(f"{{func_name}}", end_time - start_time)
                 else:
-                    raise RpcProcUnvailException("The program cannot support the requested procedure.")
-            except RpcProcUnvailException as e:
-                self.logger.info(f"Procedure [{{func_name}}] is unavailable: {{e.message}}")
+                    raise SrpcProcUnvailException("The program cannot support the requested procedure.")
+            except SrpcProcUnvailException as e:
+                self.__logger.info(f"Procedure [{{func_name}}] is unavailable: {{e.message}}")
                 response = ("404", e.message, type(e).__name__)
             except Exception as e:
-                self.logger.error(f"Function [{{func_name}}] call error: {{e}}")
+                self.__logger.error(f"Function [{{func_name}}] call error: {{e}}")
                 response = ("500", str(e), type(e).__name__)
+                self.__mestrics.inc_counter_fail(f"{{func_name}}")
             finally:
                 conn.sendall( self.__serializer.serialize(response))
 
@@ -123,11 +147,13 @@ class RpcServerStub(SrpcServerStubInterface):
                 except socket.timeout:
                     continue
                 except Exception as e:
-                    self.logger.error(f"An error occurred while listening for function [{{func_name}}] in port [{{port}}]: {{e}}")
+                    self.__logger.error(f"An error occurred while listening for function [{{func_name}}] in port [{{port}}]: {{e}}")
                     os._exit(1)
 
     def start(self):
-        time.sleep(2)
+        stop_event = threading.Event()
+        binder_thread = threading.Thread(target=self.__binder.start_binder, name="binder_thread", daemon=True)
+        binder_thread.start()
         try:
             for func_name in self.__lib_procedures_name:
                 t = threading.Thread(None,
@@ -137,25 +163,30 @@ class RpcServerStub(SrpcServerStubInterface):
                     )
                 self.__threads.append(t)
                 t.start()
+            self.__logger.info(f"SRPC server started [tcp-{{self.__host}}-{DEFAULT_BINDER_PORT}]. press Ctrl+C to stop")
+            stop_event.wait()
+        except KeyboardInterrupt:
+            self.stop()
         except Exception as e:
-            self.logger.error(f"An error occurred while starting the server stub: {{e}}")
-            self.logger.error("Mission aborted.")
+            self.__logger.error(f"An error occurred while starting the server stub: {{e}}")
+            self.__logger.error("Mission aborted.")
             os._exit(1)
 
     def stop(self):
-        self.logger.info("Stopping stub...")
+        self.__binder.stop()
+        self.__logger.info("Stopping stub...")
         self.__stop_event.set()
         for t in self.__threads:
             t.join()
         self.__executor.shutdown(wait=True)
-        self.logger.info("Stub successfully stopped.")
+        self.__logger.info("Stub successfully stopped.")
 """
-    with open(f"{server_module_name}_rpc_server_stub.py", "w") as f:
+    server_stub_file_name = f"srpc_{module_name}_server_stub.py"
+    with open(server_stub_file_name, "w") as f:
         f.write(code)
 
-    server_stub_file_name = f"{server_module_name}_rpc_server_stub.py"
     logger.info(f"Server stub successfully generated: {server_stub_file_name}")
     logger.info(
         f"You must implement the Class '{server_class_name}' that implements '{interface_name}', "
-        + f"inside '{server_module_name}.py' file."
+        f"inside '{module_name}.py' file."
     )
