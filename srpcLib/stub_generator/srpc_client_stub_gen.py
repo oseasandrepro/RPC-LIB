@@ -1,0 +1,106 @@
+import logging
+
+from ..utils.srpc_stub_util import build_param_tuple, extract_params_from_method_sig
+
+logger = logging.getLogger(__name__)
+lib_name = "srpcLib"
+
+
+def gen_client_stub(interface_file_name, interface_name, dictionary_of_methods: dict):
+    module_name = interface_file_name.split("_")[0]
+    code = f"""
+import socket
+import logging
+from {lib_name}.utils.srpc_serializer import SrpcSerializer
+from {lib_name}.binder.srpc_client_binder import SrpcClientBinder
+from {lib_name}.srpc_exceptions import SrpcCallException, SrpcProcUnvailException
+from {lib_name}.interface.srpc_client_stub_interface import SrpcClientStubInterface
+
+from {module_name}.{module_name}_interface import {interface_name}
+
+class _SrpcClientStub(SrpcClientStubInterface):
+
+    def __init__(self, server_host):
+        self.__serializer = SrpcSerializer()
+        self.__server_host = server_host
+        self.__functions = {{}}
+        self.__bind()
+
+        self.__logger = logging.getLogger(__name__)
+        self.__logger.setLevel(logging.INFO)
+        self.__console_handler = logging.StreamHandler()
+        self.__formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        self.__console_handler.setFormatter(self.__formatter)
+        self.__logger.addHandler(self.__console_handler)
+
+    def __bind(self):
+        binder = SrpcClientBinder(self.__server_host)
+        self.__functions = binder.binding_lookup()
+
+    def remote_call(self, func_name, parameters: tuple):
+        try:
+            socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socket_cli.connect((self.__server_host, self.__functions[func_name]))
+
+            request = (func_name, *parameters)
+            serialized_request = self.__serializer.serialize(request)
+            socket_cli.sendall(serialized_request)
+
+            serialized_response = socket_cli.recv(1024)
+            deserialized_response = self.__serializer.deserialize(serialized_response)
+
+            #(code, message, excepiton type)
+            if deserialized_response[0] == "500":
+                raise SrpcCallException(deserialized_response[1], deserialized_response[2])
+            elif deserialized_response[0] == "404":
+                raise SrpcProcUnvailException(deserialized_response[1])
+
+            return deserialized_response[2]
+
+        except SrpcCallException as e:
+            raise SrpcCallException(e.message, e.code)
+        except SrpcProcUnvailException as e:
+            self.__logger.error(f"Procedure {{func_name}} unavailable: {{e.message}}")
+        except socket.timeout:
+            self.__logger.error("Timeout occurred during RPC call.")
+        except socket.gaierror:
+            self.__logger.error(f"Network error: Unable to connect to the server.")
+        except ConnectionRefusedError:
+            self.__logger.error(f"Connection refused. Is the server running and reachable?")
+        except socket.error as e:
+            self.__logger.error(f"Socket error: {{e}}")
+        except OSError as e:
+            self.__logger.error(f"OS error during RPC call: {{e}}")
+
+class Srpc{module_name.capitalize()}ClientStub({interface_name}):
+    def __init__(self, server_host='127.0.0.1'):
+        self.__client_stub = _SrpcClientStub(server_host)
+"""
+    methods = """"""
+    for key, value in dictionary_of_methods.items():
+        parameters = extract_params_from_method_sig(value)
+        parameter_tuple = build_param_tuple(parameters)
+        peace_of_code = f"""
+    def {key}(self{',' if parameter_tuple else ''} {parameter_tuple[1:-1] if parameter_tuple else ''}):
+        try:
+            return self.__client_stub.remote_call('{key}', ({parameter_tuple[1:-1] if parameter_tuple else ''}) )
+        except SrpcCallException as e:
+            exc_name = e.code #exception type
+            exc_class = eval(exc_name)
+            raise exc_class(e.message)
+        """
+        methods += peace_of_code
+    code += methods
+    stub_file_name = f"srpc_{module_name}_client_stub.py"
+
+    try:
+        with open(f"{stub_file_name}", "w") as f:
+            f.write(code)
+    except IOError as e:
+        logger.error(f"Error writing to file {stub_file_name}: {e}")
+        exit(1)
+    else:
+        logger.info(f"Client stub successfully generated: {stub_file_name}")
+        logger.info(
+            f"you should import {module_name}_stub from {stub_file_name} to call the procedures"
+        )

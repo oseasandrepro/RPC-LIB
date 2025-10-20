@@ -36,7 +36,9 @@ def get_interface_from_module(module: ModuleType) -> ABC:
     expected_interface_name = str1[0].upper() + str1[1:] + "Interface"
     try:
         if not issubclass(interface, ABC):
-            raise TypeError(f"{module.__name__}, do not contain an implementation of ABC class.")
+            raise TypeError(
+                f"{module.__name__}, do not contain an implementation of ABC class."
+            )
         if not interface_name == expected_interface_name:
             raise NameError(
                 f"{module.__name__}, do not contain an ABC class called {expected_interface_name}."
@@ -93,4 +95,7 @@ def extract_params_from_method_sig(method_signature: str) -> list[str]:
 
 
 def build_param_tuple(params: list[str]) -> str:
-    return f"({', '.join(params)})"
+    if len(params) == 1:
+        return f"({params[0]},)"
+    else:
+        return f"({', '.join(params)})"
