@@ -9,10 +9,10 @@ jobs:
         python-version: [3.13]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -21,8 +21,15 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install -e .
 
+      - name: Check formatting
+        run: |
+          black --check .
+
+      - name: Run Flake8
+        run: |
+          flake8 --ignore=E501 .
       - name: Run unit tests
         run: pytest tests/unit
-        
+
       - name: Run integration tests
         run: pytest tests/integration
