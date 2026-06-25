@@ -36,7 +36,12 @@ def increment_counter(metric_name):
 
 def update_timer_metric(metric_name, value):
     if metric_name not in timer_metrics:
-        timer_metrics[metric_name] = (value, value, value, value)  # min, max, total, avg
+        timer_metrics[metric_name] = (
+            value,
+            value,
+            value,
+            value,
+        )  # min, max, total, avg
     else:
         min_val, max_val, total, avg = timer_metrics[metric_name]
         min_val = min(min_val, value)
@@ -109,7 +114,9 @@ layout["body"].split_row(Layout(name="left"), Layout(name="right"))
 
 
 layout["header"].update(
-    Panel("SRPC Live Metrics Dashboard. Press Ctrl+C to exit.", style="bold white on blue")
+    Panel(
+        "SRPC Live Metrics Dashboard. Press Ctrl+C to exit.", style="bold white on blue"
+    )
 )
 layout["left"].update(Panel("Counter Panel"))
 layout["right"].update(Panel("Time Panel"))

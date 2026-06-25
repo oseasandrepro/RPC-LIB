@@ -11,7 +11,9 @@ class SrpcMetric(SrpcMetricsInterface):
         self.__logger = logging.getLogger(__name__)
         self.__logger.setLevel(logging.INFO)
         self.__file_handler = logging.FileHandler(log_path)
-        self.__formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        self.__formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        )
         self.__file_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__file_handler)
 
