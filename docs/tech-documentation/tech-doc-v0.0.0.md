@@ -30,7 +30,7 @@
 ## 1. Introduction & Concepts
 
 ### 1.1 Wat is RPC
-"In distributed computing, a remote procedure call (RPC) is an action in which a computer program causes a procedure to execute in a different address space of the current process (commonly on another computer on a shared computer network), which is written as if it were a normal (local) procedure call, without the programmer explicitly writing the details for the remote interaction. That is, the programmer writes essentially the same code whether the subroutine is local to the executing program, or remote. This is a form of server interaction (caller is client, executor is server), typically implemented via a request–response message passing system.The RPC model implies a level of location transparency, namely that calling procedures are largely the same whether they are local or remote, but usually, they are not identical, so local calls can be distinguished from remote calls. Remote calls are usually orders of magnitude slower and less reliable than local calls, so distinguishing them is important." - [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call).
+"In distributed computing, a remote procedure call (RPC) is an action in which a computer program causes a procedure to execute in a different address space of the current process (commonly on another computer on a shared computer network), which is written as if it were a local procedure call, without the programmer explicitly writing the details for the remote interaction. That is, the programmer writes essentially the same code whether the subroutine is local to the executing program, or remote. This is a form of server interaction (caller is client, executor is server), typically implemented via a request–response message passing system.The RPC model implies a level of location transparency, namely that calling procedures are largely the same whether they are local or remote, but usually, they are not identical, so local calls can be distinguished from remote calls. Remote calls are usually orders of magnitude slower and less reliable than local calls, so distinguishing them is important." - [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call).
 
 **Every modern service mesh is descendent of this ideia - just with better Cryptography and fewer open doors.**
 
@@ -43,14 +43,19 @@ Figure 1. Remote Procedure Call Flow
 ![RPC model](../images/rpc_model.jpg)
 
 ### 1.2 The SRPC
-SRP use RPC ideia to provide a "set of procedure"(a Service).
-SRPC uses Python as IDL(Interface Definition Language),specifically the abc module to define service boundaries.
+SRP uses the RPC ideia, and provide a framework to make easy programmers implement services(set of procedures).
+SRPC uses Python as IDL(Interface Definition Language), specifically the [abc module](https://docs.python.org/3/library/abc.html) to define service boundaries.
+
+For those with a knack for language design, the idea is to view the use of [abstract types](https://en.wikipedia.org/wiki/Abstract_type)
+as "a language" for specifying protocols or interfaces. As many languages implements this concept, essentialy the challenge to extend
+the LIB for others langues is to understand "Sockets", "abstract types" and how each language implement types.
+Now the LIB only suport Python language.
+
 In the current stage of the project the technical aim is build a solid, extensibile and esay to refactor fundation.
-Thingking abauto users(programers) perpective, the aim is faciliate esay and rapidy prototype of LAN interprocess comunication.
+thinking from the users' perspective - programers - the aim is simplify the implementation of distributed processes while preserving a clean programming abstraction.
 
 Core Design Goals:
-- Rapid Prototyping: Minimal setup, native Python code, and auto-generated network bindings.
-
+- Rapid Prototyping: Minimal setup, and auto-generated network bindings.
 - Transparent Abstraction: Remote exceptions should feel like local exceptions to the client.
 
 ## 2. High-Level Architecture
@@ -59,7 +64,7 @@ Core Design Goals:
 In SRPC, a "Service" is defined strictly by its directory structure and Python naming conventions.  \
 This strictness enables the tooling to automatically generate network bindings.
 
-A valid service consists of:
+A valid service(in server side) consists of:
 1. The Interface: An abstract class defining the methods.
    - The class name must follow the <ServiceName>Interface pattern with an uppercase first letter (e.g., CalcInterface).
    - The class file name must follow the <ServiceName>_interface with an lowercase first letter (eg., calc_interface.py)
@@ -68,11 +73,11 @@ A valid service consists of:
    - A concrete class inheriting from the interface, named <ServiceName> with an uppercase first letter (e.g., Calc).
    - the concrete class file name must follow the <ServiceName>.py with an lowercase first letter(eg., calc.py)
 
-The Directory: The project directory containing these files must match the package name exactly (e.g., calc/).
+3. The Directory
+   - The packge directory containing these files must match the package name(all lowercase) exactly (e.g., calc/).
 
-Essentialy a SRPC service is an interface with methods implemented in another computer(the server).
-
-**Server Directory Structure:**
+Look the example below, <em>calc</em> is my service name.
+**Server Directory Structure**
 ```
 project/
 ├─ calc/
@@ -81,11 +86,16 @@ project/
 │  ├─ calc.py
 ├─ srpc_calc_server_stub.py
 ├─ server.py
-...
+.
+.
+.
 ```
-In the example above the <em>calc</em> is my service name.
+**Essentialy a SRPC service is an interface**
 
+> [!WARNING]
+> Maybe this perspective for client side too??
 ### 2.2 Logical Architecture Diagram
+![logical architecture diagram.png](../images/logical_architecture_diagram.png)
 
 ## 3. The SRPC Protocol
 
