@@ -100,6 +100,36 @@ project/
 ## 3. The SRPC Protocol
 
 ### 3.1 Wire Protocol
+Document exactly how data is packaged over the TCP socket.
+How do you handle message boundaries? Are you sending payload sizes before the actual data?
+What serialization format (e.g., JSON, Pickle) is being transmitted?
+
+Here I gona make a description, and show some diagrams to explain how SRPC use TCP protocol do exchange messages
+Betwen client and server.
+
+**Some premisses**
+- SRPC serializes to byte Python strings and tuples, to exchange messages
+
+In the server side we have a listner for each procedure. Each one is waiting for connection.  \
+I am using ``` accept() ``` method, of [socket(Low-level networking interface in Python)](https://docs.python.org/3/library/socket.html).  \
+After accept a connections a new socket is created, correspondent to this connection.  \
+With this new socket we call ```recv(1024)``` to recive data from client side(the request).  \
+The server is expecting this tuple ```(func_name, parameters)```, where ```func_name``` is the procedure name and, \
+```parameters``` the procedure's parameters - ```parameters``` is also a Python tuple.
+With this request tuple the server can call the corret procedure and in case of sucess the server response is the below tuple:  \
+```("200", "", result)```, where the ```200``` indicates sucess ```""``` indicates no error messages and ```result```  \
+is the procedure return.  \
+The response is sended with ```sendall(...)``` method, of [socket(Low-level networking interface in Python)](https://docs.python.org/3/library/socket.html).
+
+The ```1024``` in ```recv(1024)``` is just a convenient value that I though is good to avoid clients, \
+maliciously, send a huge amount of data in request.
+
+> [!IMPORTANT]
+> Each procedure call, in client side, make a new connection with the server
+
+**Look the below diagram***
+![srpc wire protocol](../images/srpc_wire_protocol.png)
+
 
 ## 4. Core Compoentes(The Internals)
 
