@@ -116,13 +116,26 @@ where:
 -  ```func_name``` is the procedure of the procedure to invoke.
 - ```parameters``` is a Python  tuple containing the procedure's arguments.
 
-After deserializing the request, the server invokes the corresponding procedure. If the call succeeds, it returns the following response tuple:  \
+After deserializing the request, the server invokes the corresponding procedure.  \
+If the call succeeds, it returns the following response tuple:  \
 ```("200", "", result)```
 
 where:
 - ```200``` indicates sucess.
 - ```""``` represents the absence of an error message.
 - ```result```  is the rutn value of the procedure.
+
+If the call fails, it returns a tuple int the following format :  \
+```(<error_code>, <error_message>, <exception_class>)```
+
+
+check the below table:
+
+| error code | error message        | exception class |
+|:----------------------------------|:-------------: |---------------:|
+|"404"       | "The program cannot support the requested procedure"| "SrpcProcUnvailException"|
+|"500"       | ```str(exception)``` | ```type(exception).__name__``` |
+
 
 The response is serialized and sent to the client using the ```sendall(...)``` method from Python's socket module.
 
@@ -133,16 +146,29 @@ The value ```1024``` passed to ```recv(1024)``` is a convenient buffer size.
 > it means "Receive at most 1024 bytes that are currently available."
 
 
-**Look the below diagram***
+**Look the below diagram**
 ![srpc wire protocol](../images/srpc_wire_protocol.png)
 
-
 ## 4. Core Compoentes(The Internals)
-
 ### 4.1 The Serializer
+The SRPC serializer is a simple class called ```SrpcSerializer(srcp_serializer.py)```, that have two methods,  \
+```serialize(self, data)``` and ```deserialize(self, data)``` . Currently they are simple [pickle(Python object serialization)](https://docs.python.org/3/library/pickle.html) wrapers.
+
+```serialize(self, data)``` returns ```pickle.dumps(data)```
+
+and ```deserialize(self, data)``` returns ```pickle.loads(data)```
+
+When I was designing I thought it was a good aproach, so the lib can have an extensible class for serialization.  \
+And I can change how do I serialize/deserialize only refatoring the fallowing files:
+- ```srpc_serializer_interface.py```
+- ```srcp_serializer.py```
 
 ### 4.2 Binders(Transport Layer)
 #### 4.2.1 Server Binder
+In SRPC a Server Binder is an object that have ```start_binder``` and ```stop``` methods, this is defined in  \
+```SrpcServerBinderInterface(srpc_server_binder_interface.py)``` interface.
+
+
 #### 4.2.2 Client Binder
 
 ### 4.3 Stubs(The Proxies)
