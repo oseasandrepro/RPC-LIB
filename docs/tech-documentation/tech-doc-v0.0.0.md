@@ -11,6 +11,8 @@
     - [2.2 Logical Architecture Diagram](#22-logical-architecture-diagram)
   - [3. The SRPC Protocol](#3-the-srpc-protocol)
     - [3.1 Wire Protocol](#31-wire-protocol)
+      - [3.1.1 Server response types](#311-server-response-types)
+      - [3.1.2 Protocol diagram](#312-protocol-diagram)
   - [4. Core Compoentes(The Internals)](#4-core-compoentesthe-internals)
     - [4.1 The Serializer](#41-the-serializer)
     - [4.2 Binders(Transport Layer)](#42-binderstransport-layer)
@@ -77,6 +79,7 @@ A valid service(in server side) consists of:
    - The packge directory containing these files must match the package name(all lowercase) exactly (e.g., calc/).
 
 Look the example below, <em>calc</em> is my service name.
+
 **Server Directory Structure**
 ```
 project/
@@ -92,8 +95,6 @@ project/
 ```
 **Essentialy a SRPC service is an interface**
 
-> [!WARNING]
-> Maybe this perspective for client side too??
 ### 2.2 Logical Architecture Diagram
 ![logical architecture diagram.png](../images/logical_architecture_diagram.png)
 
@@ -106,11 +107,11 @@ Here I describe how SRPC uses the TCP protocol to exchange messages between the 
 >
 > SRPC serializes Python strings and tuples into bytes before transmitting them over the network.
 
-In the server side, there is a listner for each registered procedure. Each listner one waits for incomming client connections using ``` accept() ``` method  from [Python's socket module (the low-level networking interface)](https://docs.python.org/3/library/socket.html).  \
+In the server side, there is a listner for each registered procedure. Each listner one waits for incomming client connections using ``` accept() ``` method  from [Python's socket module (the low-level networking interface)](https://docs.python.org/3/library/socket.html).
 
 When a client connects, ```accepts()``` return a new socket dedicated to that connection. The server then calls ```recv(1024)``` on this socket to receive the client's request.
 
-The server expects the request to be a tuple in the following format:  \ ```(func_name, parameters)```
+The server expects the request to be a tuple in the following format: ```(func_name, parameters)```
 
 where:
 -  ```func_name``` is the procedure of the procedure to invoke.
@@ -128,25 +129,29 @@ where:
 If the call fails, it returns a tuple int the following format :  \
 ```(<error_code>, <error_message>, <exception_class>)```
 
-
-check the below table:
-
-| error code | error message        | exception class |
-|:----------------------------------|:-------------: |---------------:|
-|"404"       | "The program cannot support the requested procedure"| "SrpcProcUnvailException"|
-|"500"       | ```str(exception)``` | ```type(exception).__name__``` |
-
-
 The response is serialized and sent to the client using the ```sendall(...)``` method from Python's socket module.
 
 The value ```1024``` passed to ```recv(1024)``` is a convenient buffer size.
 
-> [!CAUTION]
+> [!WARNING]
 > recv(1024) does not means "Receive the whole message, up to 1024 bytes."
 > it means "Receive at most 1024 bytes that are currently available."
 
+#### 3.1.1 Server response types
 
-**Look the below diagram**
+**Error**
+
+| error code | error message        | exception class |
+|:----------------------------------|:-------------:|---------------:|
+|"404"       | "The program cannot support the requested procedure"| "SrpcProcUnvailException"|
+|"500"       | ```str(exception)``` | ```type(exception).__name__``` |
+
+**Sucess**
+| response code | message        | result |
+|:-------------------------------|:-------------:|---------------:|
+|"200"          | ""             | is the rutn value of the procedure|
+
+#### 3.1.2 Protocol diagram
 ![srpc wire protocol](../images/srpc_wire_protocol.png)
 
 ## 4. Core Compoentes(The Internals)
@@ -163,7 +168,12 @@ And I can change how do I serialize/deserialize only refatoring the fallowing fi
 - ```srpc_serializer_interface.py```
 - ```srcp_serializer.py```
 
+> [!NOTE]
+> Among other factors, the use of a Python-specific serialization mechanism limits the library's portability,
+> as it prevents straightforward interoperability with implementations in other programming languages.
+
 ### 4.2 Binders(Transport Layer)
+First of all what is a binder?
 #### 4.2.1 Server Binder
 In SRPC a Server Binder is an object that have ```start_binder``` and ```stop``` methods, this is defined in  \
 ```SrpcServerBinderInterface(srpc_server_binder_interface.py)``` interface.
