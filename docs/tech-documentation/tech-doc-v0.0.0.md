@@ -234,7 +234,7 @@ def __handle_lookup_request(self, conn):
 
 >[!NOTE]
 >This functionality could be removed.
->Eventualy the project gonna follow the contract-first framework aproach.
+>Eventualy the project gonna follow the [contract-first](https://en.wikipedia.org/wiki/Design_by_contract) aproach.
 
 
 #### 4.2.2 Client Binder
