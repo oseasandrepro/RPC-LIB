@@ -15,7 +15,7 @@
       - [3.1.2 Protocol diagram](#312-protocol-diagram)
   - [4. Core Compoentes(The Internals)](#4-core-compoentesthe-internals)
     - [4.1 The Serializer](#41-the-serializer)
-    - [4.2 Binders(Transport Layer)](#42-binderstransport-layer)
+    - [4.2 Binder / Port Mapper](#42-binder--port-mapper)
       - [4.2.1 Server Binder](#421-server-binder)
       - [4.2.2 Client Binder](#422-client-binder)
     - [4.3 Stubs(The Proxies)](#43-stubsthe-proxies)
@@ -172,11 +172,69 @@ And I can change how do I serialize/deserialize only refatoring the fallowing fi
 > Among other factors, the use of a Python-specific serialization mechanism limits the library's portability,
 > as it prevents straightforward interoperability with implementations in other programming languages.
 
-### 4.2 Binders(Transport Layer)
-First of all what is a binder?
+### 4.2 Binder / Port Mapper
+"The port mapper program maps RPC program and version numbers to transport-specific port numbers.  \
+This program makes dynamic binding of remote programs possible.
+
+This is desirable because the range of reserved port numbers is very small and  \
+ the number of potential remote programs is very large.  \
+By running only the port mapper on a reserved port, the port numbers of other remote programs  \
+can be ascertained by querying the port mapper." - [RFC 1057](https://datatracker.ietf.org/doc/html/rfc1057), APPENDIX A.
+
+
 #### 4.2.1 Server Binder
-In SRPC a Server Binder is an object that have ```start_binder``` and ```stop``` methods, this is defined in  \
-```SrpcServerBinderInterface(srpc_server_binder_interface.py)``` interface.
+In SRPC the Binder is builtin with the service during server stub generation.  \
+A Binder is an object that have ```start_binder``` and ```stop``` methods, this is defined in  \
+```SrpcServerBinderInterface(srpc_server_binder_interface.py)``` interface. it is implemented in
+```SrpcServerBinder(srpc_server_binder.py)``` class.
+
+**Essentialy, in SRPC, the Binder holds and serves a Python dictionary where the key is the procedure name and value is the port number**
+
+In the current version(V0.0.0), by standard, every service is listing in TCP port ```5000``` for two types of requests:
+- ```("REGISTER", <func_name>, <port_number>)``
+- ```("LOOKUP", None, None)```
+
+The ```REGISTER``` is used to append the pair procedure name and port in the binder dictionary.
+So after the call of  ```socket.bind(host, 0)``` It is used sockets, on the server it self, to make a ```REGISTER``` request.  \
+look the code below:
+```
+scoket.bind((self.__host, 0))
+port = socket.getsockname()[1]
+self.__register_func_in_binder(func_name, port)
+```
+The ```register_func_in_binder(func_name, port)``` is called for each procedure of the service.
+
+The ```LOOKUP``` is used in client side two get the dictionaly of procedures and ports.
+
+Check below how the class ```SrpcServerBinder``` handle this requests:
+```python
+def __handle_lookup_request(self, conn):
+    try:
+        msg = conn.recv(1024)
+        request_tuple = self.__serializer.deserialize(msg)
+        if request_tuple[0] == "LOOKUP":
+            response_tuple = ("200", "", self.__functions)
+            self.__total_lookup_request += 1
+            self.__logger.info(
+                f"Total lookup requests: {self.__total_lookup_request}"
+            )
+        elif request_tuple[0] == "REGISTER":
+            req_function = request_tuple[1]
+            port = request_tuple[2]
+            self.__functions[req_function] = port
+            response_tuple = ("200", "", None)
+            self.__logger.info(
+                f"Function [{req_function}] registered on port #[{port}]"
+            )
+        else:
+            self.__logger.error(f"Unknown request type: {request_tuple[0]}")
+            response_tuple = ("500", "erro simulado", None)
+```
+
+
+>[!NOTE]
+>This functionality could be removed.
+>Eventualy the project gonna follow the contract-first framework aproach.
 
 
 #### 4.2.2 Client Binder
