@@ -23,7 +23,6 @@
         - [4.3.1.1 Thread Model Diagram](#4311-thread-model-diagram)
         - [4.3.1.2 How it is generated](#4312-how-it-is-generated)
       - [4.3.2 Client Stub \& Threading Model](#432-client-stub--threading-model)
-      - [4.3.3 Threading Model Diagram](#433-threading-model-diagram)
   - [5. Tooling \& Ecosystem](#5-tooling--ecosystem)
     - [5.1 Stub Generator](#51-stub-generator)
     - [5.2 Metrics](#52-metrics)
@@ -440,8 +439,96 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
 ```
 
 #### 4.3.2 Client Stub & Threading Model
+In SRPC the Client Stub have internaly two classes ```SrpcClientStub```
+and ```Srpc<service-name>ClientStub```.
 
-#### 4.3.3 Threading Model Diagram
+```Srpc<service-name>ClientStub``` is an internal class that handle network operations:
+- binding_lookup
+- remote_call
+Client Stub uses an Client Binder object and, mantains the dictionary of precedures and port in memory.
+Client Stub get this dictionary using ```binder.binding_loolup()``` method.
+The ```remote_call``` method is implemented, inside ```_SrpcClientStub```, And it is used to efectively make a request to de server
+for "calling" a specific method.
+
+look below an example of generated code of ```_SrpcClientStub``` class
+
+```python
+class _SrpcClientStub(SrpcClientStubInterface):
+
+    def __init__(self, server_host):
+        self.__serializer = SrpcSerializer()
+        self.__server_host = server_host
+        self.__functions = {}
+        self.__bind()
+
+        self.__logger = logging.getLogger(__name__)
+        self.__logger.setLevel(logging.INFO)
+        self.__console_handler = logging.StreamHandler()
+        self.__formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        self.__console_handler.setFormatter(self.__formatter)
+        self.__logger.addHandler(self.__console_handler)
+
+    def __bind(self):
+        binder = SrpcClientBinder(self.__server_host)
+        self.__functions = binder.binding_lookup()
+
+    def remote_call(self, func_name, parameters: tuple):
+        try:
+            socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socket_cli.connect((self.__server_host, self.__functions[func_name]))
+
+            request = (func_name, *parameters)
+            serialized_request = self.__serializer.serialize(request)
+            socket_cli.sendall(serialized_request)
+
+            serialized_response = socket_cli.recv(1024)
+            deserialized_response = self.__serializer.deserialize(serialized_response)
+
+            #(code, message, excepiton type)
+            if deserialized_response[0] == "500":
+                raise SrpcCallException(deserialized_response[1], deserialized_response[2])
+            elif deserialized_response[0] == "404":
+                raise SrpcProcUnvailException(deserialized_response[1])
+
+            return deserialized_response[2]
+
+        except SrpcCallException as e:
+            raise SrpcCallException(e.message, e.code)
+        except SrpcProcUnvailException as e:
+            self.__logger.error(f"Procedure {func_name} unavailable: {e.message}")
+        except socket.timeout:
+            self.__logger.error("Timeout occurred during RPC call.")
+        except socket.gaierror:
+            self.__logger.error(f"Network error: Unable to connect to the server.")
+        except ConnectionRefusedError:
+            self.__logger.error(f"Connection refused. Is the server running and reachable?")
+        except socket.error as e:
+            self.__logger.error(f"Socket error: {e}")
+        except OSError as e:
+            self.__logger.error(f"OS error during RPC call: {e}")
+```
+
+```Srpc<service-name>ClientStub``` is a public class that implements the service interface and, uses ```SrpcClientStub```
+to make the remote calls. look below an example look below an example of generated code of ```Srpc<service-name>ClientStub``` class:
+
+```python
+class SrpcCalcClientStub(CalcInterface):
+    def __init__(self, server_host='127.0.0.1'):
+        self.__client_stub = _SrpcClientStub(server_host)
+
+    def add(self, a, b):
+        try:
+            return self.__client_stub.remote_call('add', (a, b) )
+        except SrpcCallException as e:
+            exc_name = e.code #exception type
+            exc_class = eval(exc_name)
+            raise exc_class(e.message)
+...
+```
+
+Both class will be in a generated file caled ```srpc_<service-name>_client_stub.py```
+
+The Client Stub uses a simple thread model.
 
 ## 5. Tooling & Ecosystem
 ### 5.1 Stub Generator
