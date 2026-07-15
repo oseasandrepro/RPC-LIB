@@ -549,7 +549,7 @@ This will generate two files srpc_<service-name>_server_stub.py and srpc_<servic
 Move the ```srpc_<service-name>_client_stub.py``` file to client directory.
 
 ### 5.2 Metrics
-In the current version SRPC have it won simple metric module called ```SrpcMetric(srpc_metric.py)```.
+In the current version(V0.0.0) SRPC have it won simple metric module called ```SrpcMetric(srpc_metric.py)```.
 It is especified in the interface ```SrpcMetricsInterface(srpc_metrics_interface.py)``` look int the implementaion below in the file ```SrpcMetric(srpc_metric.py)```:
 
 ```python
