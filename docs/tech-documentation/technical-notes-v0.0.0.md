@@ -633,7 +633,84 @@ def __handle_request(self, func_name, conn, addr):
 > [!NOTE]
 > The start_time and end_time may be should count also the time to send the response not only the procedure time execution.
 
-#### 5.2.1 The Live Dashboard
-While runing the server log in the console informations about request being handled.
+>[!WARNING]
+> This feature have a Disk usage trap.  \
+> In the current version(V0.0.0) does not have an automatic "cleaner" for the file ```srpc_server_metrics.log```  \
+> So the file size will grow indefinitely consequtently the use of the Disk.
 
+#### 5.2.1 The Live Dashboard
+The installation of the LIB came with the ```srpc_show_metrics``` utilitary. You can use it in the server it gonna read the file ```srpc_server_metrics.log```  \
+To show the below metrics:
+- Count metrics
+  - success counter
+  - faulure counter
+- time metric
+  - min(ms)
+  - max(ms)
+  - total(ms)
+  - avg(ms)
+
+The Ideia behind this tool is to "watch" the file ```srpc_server_metrics.log``` like the ```tail``` command in linux.
+When this tools is called it go to the end of the file and start watch for new lines every ```100ms```. look teh function below:
+```python
+def follow(thefile):
+    thefile.seek(0, os.SEEK_END)
+
+    while True:
+        line = thefile.readline()
+        if not line:
+            time.sleep(0.1)
+            continue
+
+        yield line
+
+```
+To undertand the use of ```yield``` and fully understand this function you need know about [Generators](https://en-wikipedia-org.translate.goog/wiki/Generator_(computer_programming)?_x_tr_sl=en&_x_tr_tl=pt&_x_tr_hl=pt&_x_tr_pto=tc).
+
+I also have a pratical reference about iterators and generators [here](https://github.com/oseasandrepro/LPX).
+
+Look below hos this function is used:
+```python
+...
+        # Live refresh
+        with Live(layout, refresh_per_second=4, screen=True):
+            logfile = open(log_path, "r")
+            loglines = follow(logfile) # <------------------------------------
+            for line in loglines:
+                metric = line.split(" ")[4]
+                metric_name = metric.split("=")[0]
+                if (metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_FAIL) or (
+                    metric_name.split(".")[1] == SrpcmetricsTypes.COUNTER_SUCCESS
+                ):
+                    increment_counter(metric_name)
+                    panel = Panel(generate_couter_table(), title="Counter Panel")
+                    layout["left"].update(panel)
+                else:
+                    value = float(metric.split("=")[1])
+                    update_timer_metric(metric_name, value)
+                    panel = Panel(generate_timer_table(), title="Time Panel")
+                    layout["right"].update(panel)
+...
+```
+
+The script of this tools is in ```srpc_show_metrics.py```
+
+**How to use it?**
+
+Inside the server directory run this command ```python -m srpcLib.tools.srpc_show_metrics srpc_server_metrics.log```
+
+You will see in something like the image below:
+
+![The live Dashboard](../images/populated-metric-dashboard.png)
+
+>[!WARNING]
+> This tool have a memory trap.  \
+> It is used a List to mantain in memory each loged line, to compute the metrics.  \
+> So the use of memory will grow indefinitely. Therefore it is not recommend to use this tools a long period of time.
+
+> [!CAUTION]
+> From the point of view of OS/"low leve" architecture we could have concurrency to read/werite in the file ```srpc_server_metrics.log```.  \
+> Here We are talkin about real concurrence since the server service(the writer) and the the srpc_show_metrics tool will run in
+> different process. So eventualy they can run in parallel - In a Multicore machine
 #### 5.2.2 Server-Side Logging
+While runing the server log in the console informations about request being handled.
