@@ -35,11 +35,11 @@
 ## 1. Introduction & Concepts
 
 ### 1.1 Wat is RPC
-"In distributed computing, a remote procedure call (RPC) is an action in which a computer program causes a procedure to execute in a different address space of the current process (commonly on another computer on a shared computer network), which is written as if it were a local procedure call, without the programmer explicitly writing the details for the remote interaction. That is, the programmer writes essentially the same code whether the subroutine is local to the executing program, or remote. This is a form of server interaction (caller is client, executor is server), typically implemented via a request–response message passing system.The RPC model implies a level of location transparency, namely that calling procedures are largely the same whether they are local or remote, but usually, they are not identical, so local calls can be distinguished from remote calls. Remote calls are usually orders of magnitude slower and less reliable than local calls, so distinguishing them is important." - [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call).
+""In distributed computing, a remote procedure call (RPC) is an action in which a computer program causes a procedure to execute in a different address space of the current process (commonly on another computer on a shared computer network), which is written as if it were a local procedure call, without the programmer explicitly writing the details for the remote interaction. That is, the programmer writes essentially the same code whether the subroutine is local to the executing program, or remote. This is a form of server interaction (caller is client, executor is server), typically implemented via a request–response message passing system.The RPC model implies a level of location transparency, namely that calling procedures are largely the same whether they are local or remote, but usually, they are not identical, so local calls can be distinguished from remote calls. Remote calls are usually orders of magnitude slower and less reliable than local calls, so distinguishing them is important." - [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call).
 
-**Every modern service mesh is descendent of this ideia - just with better Cryptography and fewer open doors.**
+**Every modern service mesh is a descendant of this idea - just with better cryptography and fewer open doors.**
 
-"How it works? First, the caller process sends a call message that includes the procedure parameters to the server process. Then, the caller process waits for a reply message (blocks). Next, a process on the server side, which is dormant until the arrival of the call message, extracts the procedure parameters, computes the results, and sends a reply message. The server waits for the next call message. Finally, a process on the caller receives the reply message, extracts the results of the procedure, and the caller resumes execution.
+"How it works? First, the caller process sends a call message that includes the procedure parameters to the server process. Then, the caller process waits for a reply message (blocks). Next, a process on the server side, which is dormant until the arrival of the call message, extracts the procedure parameters, computes the results, and sends a reply message. Finally, a process on the caller receives the reply message, extracts the results of the procedure, and the caller resumes execution.
 
 The Remote Procedure Call Flow figure (Figure 1) illustrates the RPC paradigm." - [RPC Model](https://www.ibm.com/docs/en/aix/7.3.0?topic=call-rpc-model).
 
@@ -48,19 +48,15 @@ Figure 1. Remote Procedure Call Flow
 ![RPC model](../images/rpc_model.jpg)
 
 ### 1.2 The SRPC
-SRP uses the RPC ideia, and provide a framework to make easy programmers implement services(set of procedures).
-SRPC uses Python as IDL(Interface Definition Language), specifically the [abc module](https://docs.python.org/3/library/abc.html) to define service boundaries.
+SRPC uses the RPC idea and provides a framework to make it easy for programmers to implement services (sets of procedures). SRPC uses Python as an IDL (Interface Definition Language), specifically the [abc module](https://docs.python.org/3/library/abc.html) to define service boundaries.
 
 For those with a knack for language design, the idea is to view the use of [abstract types](https://en.wikipedia.org/wiki/Abstract_type)
-as "a language" for specifying protocols or interfaces. As many languages implements this concept, essentialy the challenge to extend
-the LIB for others langues is to understand "Sockets", "abstract types" and how each language implement types.
-Now the LIB only suport Python language.
+as "a language" for specifying protocols or interfaces. Because many languages implement this concept, essentially the challenge to extending the library for other languages is to understand "sockets," "abstract types," and how each language implements types. Currently, in version v0.0.0, the library only supports the Python language.
 
-In the current stage of the project the technical aim is build a solid, extensibile and esay to refactor fundation.
-thinking from the users' perspective - programers - the aim is simplify the implementation of distributed processes while preserving a clean programming abstraction.
+In the current stage of the project, the technical aim is to build a solid, extensible, and easy-to-refactor foundation. Thinking from the users' perspective - programmers - the aim is to simplify the implementation of distributed processes while preserving a clean programming abstraction
 
 **Core Design Goals:**
-- Rapid Prototyping: Minimal setup, and auto-generated network bindings.
+- Rapid Prototyping: Minimal setup and auto-generated network bindings.
 - Transparent Abstraction: Remote exceptions should feel like local exceptions to the client.
 
 **Features:**
@@ -75,20 +71,18 @@ thinking from the users' perspective - programers - the aim is simplify the impl
 ## 2. High-Level Architecture
 
 ### 2.1 What is a Service in SRPC
-In SRPC, a "Service" is defined strictly by its directory structure and Python naming conventions.  \
-This strictness enables the tooling to automatically generate network bindings.
+In SRPC, a "Service" is defined strictly by its directory structure and Python naming conventions. This strictness enables the tooling to automatically generate network bindings.
 
-A valid service(in server side) consists of:
-1. The Interface: An abstract class defining the methods.
-   - The class name must follow the <ServiceName>Interface pattern with an uppercase first letter (e.g., CalcInterface).
-   - The class file name must follow the <ServiceName>_interface with an lowercase first letter (eg., calc_interface.py)
-
+A valid service on the server side consists of:
+1. TThe Interface: An abstract class defining the methods.
+   - The class name must follow the Interface pattern with an uppercase first letter (e.g., CalcInterface).
+   - The class file name must follow the interface pattern with a lowercase first letter (e.g., calc_interface.py).
 2. The Implementation:
-   - A concrete class inheriting from the interface, named <ServiceName> with an uppercase first letter (e.g., Calc).
-   - the concrete class file name must follow the <ServiceName>.py with an lowercase first letter(eg., calc.py)
+   - A concrete class inheriting from the interface, named with an uppercase first letter (e.g., Calc).
+   - The concrete class file name must end with .py and use a lowercase first letter (e.g., calc.py).
 
 3. The Directory
-   - The packge directory containing these files must match the package name(all lowercase) exactly (e.g., calc/).
+   - The package directory containing these files must match the package name (all lowercase) exactly (e.g., calc/).
 
 Look the example below, <em>calc</em> is my service name.
 
@@ -113,15 +107,15 @@ project/
 ## 3. The SRPC Protocol
 
 ### 3.1 Wire Protocol
-Here I describe how SRPC uses the TCP protocol to exchange messages between the client and the server.
+SRPC uses the TCP protocol to exchange messages between the client and the server
 > [!IMPORTANT]
-> Each procedure call on client side establishes a new connection to the server
+> Each procedure call on the client side establishes a new connection to the server.
 >
 > SRPC serializes Python strings and tuples into bytes before transmitting them over the network.
 
-In the server side, there is a listner for each registered procedure. Each listner one waits for incomming client connections using ``` accept() ``` method  from [Python's socket module (the low-level networking interface)](https://docs.python.org/3/library/socket.html).
+On the server side, there is a listener for each registered procedure. Each listener waits for incoming client connections using the ``` accept() ``` method  from [Python's socket module (the low-level networking interface)](https://docs.python.org/3/library/socket.html).
 
-When a client connects, ```accepts()``` return a new socket dedicated to that connection. The server then calls ```recv(1024)``` on this socket to receive the client's request.
+When a client connects, ```accepts()``` returns a new socket dedicated to that connection. The server then calls ```recv(1024)``` on this socket to receive the client's request.
 
 The server expects the request to be a tuple in the following format: ```(func_name, parameters)```
 
@@ -130,15 +124,17 @@ where:
 - ```parameters``` is a Python  tuple containing the procedure's arguments.
 
 After deserializing the request, the server invokes the corresponding procedure.  \
-If the call succeeds, it returns the following response tuple:  \
+If the call succeeds, it returns the following response tuple:
+
 ```("200", "", result)```
 
 where:
-- ```200``` indicates sucess.
+- ```200``` indicates success.
 - ```""``` represents the absence of an error message.
-- ```result```  is the rutn value of the procedure.
+- ```result```  is the return value of the procedure.
 
-If the call fails, it returns a tuple int the following format( the "Remote exception propagation" feature) :  \
+If the call fails, it returns a tuple in the following format (the "Remote exception propagation" feature) :
+
 ```(<error_code>, <error_message>, <exception_class>)```
 
 The response is serialized and sent to the client using the ```sendall(...)``` method from Python's socket module.
@@ -168,15 +164,14 @@ The value ```1024``` passed to ```recv(1024)``` is a convenient buffer size.
 
 ## 4. Core Compoentes(The Internals)
 ### 4.1 The Serializer
-The SRPC serializer is a simple class called ```SrpcSerializer(srcp_serializer.py)```, that have two methods,  \
-```serialize(self, data)``` and ```deserialize(self, data)``` . Currently they are simple [pickle(Python object serialization)](https://docs.python.org/3/library/pickle.html) wrapers.
+The SRPC serializer is a simple class called ```SrpcSerializer(srcp_serializer.py)``` that has two methods: ```serialize(self, data)``` and ```deserialize(self, data)``` . Currently they are simple wrappers for [pickle(Python object serialization)](https://docs.python.org/3/library/pickle.html).
 
 ```serialize(self, data)``` returns ```pickle.dumps(data)```
 
 and ```deserialize(self, data)``` returns ```pickle.loads(data)```
 
-When I was designing I thought it was a good aproach, so the lib can have an extensible class for serialization.  \
-And I can change how do I serialize/deserialize only refatoring the fallowing files:
+This design approach ensures the library has an extensible class for serialization, allowing changes to how data is serialized/deserialized by refactoring only a few files:
+
 - ```srpc_serializer_interface.py```
 - ```srcp_serializer.py```
 
@@ -185,27 +180,22 @@ And I can change how do I serialize/deserialize only refatoring the fallowing fi
 > as it prevents straightforward interoperability with implementations in other programming languages.
 
 ### 4.2 Binder / Port Mapper
-"The port mapper program maps RPC program and version numbers to transport-specific port numbers.  \
-This program makes dynamic binding of remote programs possible.
-
-This is desirable because the range of reserved port numbers is very small and  \
- the number of potential remote programs is very large.  \
-By running only the port mapper on a reserved port, the port numbers of other remote programs  \
-can be ascertained by querying the port mapper." - [RFC 1057](https://datatracker.ietf.org/doc/html/rfc1057), APPENDIX A.
+"The port mapper makes dynamic binding of remote programs possible. This is desirable because the range of reserved port numbers is very small, and the number of potential remote programs is very large.
+By running only the port mapper on a reserved port, the port numbers of other remote programs can be ascertained by querying the port mapper." - [RFC 1057](https://datatracker.ietf.org/doc/html/rfc1057), APPENDIX A.
 
 >[!NOTE]
 >This functionality will be removed.
 >Eventualy the project gonna follow the [contract-first](https://en.wikipedia.org/wiki/Design_by_contract) aproach.
 
 #### 4.2.1 Server Binder
-In SRPC the Server Binder is builtin with the service during server stub generation.  \
+In SRPC, the Server Binder is built-in with the service during server stub generation.
 A Binder is an object that have ```start_binder``` and ```stop``` methods, this is defined in  \
 ```SrpcServerBinderInterface(srpc_server_binder_interface.py)``` interface. it is implemented in
 ```SrpcServerBinder(srpc_server_binder.py)``` class.
 
-**Essentialy, in SRPC, the Server Binder holds and serves a Python dictionary where the key is the procedure name and value is the port number**
+**Essentially, it holds and serves a Python dictionary where the key is the procedure name and the value is the port number.**
 
-In the current version(V0.0.0), by standard, every service is listing in TCP port ```5000``` for two types of requests:
+In the current version(v0.0.0), by standard, every service is listing in TCP port ```5000``` for two types of requests:
 - ```("REGISTER", <func_name>, <port_number>)``
 - ```("LOOKUP", None, None)```
 
@@ -247,8 +237,9 @@ def __handle_lookup_request(self, conn):
 ```
 
 #### 4.2.2 Client Binder
-In SRPC a Client Binder is an object with that have ```binding_lookup``` method.  \
-His role is give the hability for client aplication to get the dictionary of procedures, with correpondent port, from the server.  \
+A Client Binder gives the client application the ability to get the dictionary of procedures, with their correspondent ports, from the server.
+In SRPC a Client Binder is an object with that have ```binding_lookup``` method.
+
 So the client side will make this request ```("LOOKUP", None, None)``` to the server.  \
 The response is the dictionary mentioned in *4.2.1 Server Binder*.
 
@@ -264,7 +255,7 @@ It allows the client application to access a service as if it were local, while 
 does not need to be aware of the complexities of distributed computing. Instead, it can rely on the stub to handle the remote
 communication, while providing a familiar interface for the developer to work with." - [Stub (distributed computing)](https://en.wikipedia.org/wiki/Stub_(distributed_computing))
 
-**Essentialy the stub role is to hide the details of network comunication in distributed applications(in server and client side)**
+**Essentially, the stub's role is to hide the details of network communication in distributed applications (on both the server and client sides).**
 
 #### 4.3.1 Server Stub & Threading Model
 In SRPC the Server Stub is a object with the fallow methods:
@@ -273,15 +264,15 @@ In SRPC the Server Stub is a object with the fallow methods:
 
 The interface is defined in ```SrpcServerStubInterface(srpc_server_stub_interface.py)```.
 
-The ```start``` reponsable to set the procedure-port dictionary, start one concurrent thread for each procedure
-and start the binder in it own concurrent thread
+The ```start``` method is responsible for setting the procedure-port dictionary, starting one concurrent thread for each procedure, and starting the binder in its own concurrent thread.
 
-The ```stop``` method will shotdown the Binder thread and all procedures threads.
+The ```stop``` method will shut down the Binder thread and all procedure threads.
 
 ##### 4.3.1.1 Thread Model Diagram
 ![SRPC_Server_thread_model](../images/SRPC_Server_thread_model.png)
 
-Each listner thread trigger ```n``` handler thread and, each handler thread execute a copy of it correpondent procedure.
+Each listener thread triggers ```n``` handler threads, and each handler thread executes a copy of its correspondent procedure.
+
 Internaly the binder uses a Thread pool look the code below:
 ```python
 with ThreadPoolExecutor(max_workers=5) as pool:
@@ -455,8 +446,9 @@ and ```Srpc<service-name>ClientStub```.
 ```Srpc<service-name>ClientStub``` is an internal class that handle network operations:
 - binding_lookup
 - remote_call
-Client Stub uses an Client Binder object and, mantains the dictionary of precedures and port in memory.
-Client Stub get this dictionary using ```binder.binding_loolup()``` method.
+
+The Client Stub uses a Client Binder object and maintains the dictionary of procedures and ports in memory.
+The Client Stub gets this dictionary using the ```binder.binding_loolup()``` method.
 The ```remote_call``` method is implemented, inside ```_SrpcClientStub```, And it is used to efectively make a request to de server
 for "calling" a specific method.
 
@@ -545,7 +537,7 @@ In this script is used parametrizied strings for thinkgs like: ```lib_name```, `
 
 ## 5. Tooling & Ecosystem
 ### 5.1 Stub Generator
-The tool to generate the stubs is srpc_stub_gen. With the lib instaled, run the command below, inside the server directory:
+The tool to generate the stubs is srpc_stub_gen". With the lib instaled, run the command below, inside the server directory:
 
 ``` python -m srpcLib.tools.srpc_stub_gen <service-name>/<service-name>_interface.py ```
 
@@ -558,7 +550,7 @@ This will generate two files srpc_<service-name>_server_stub.py and srpc_<servic
 Move the ```srpc_<service-name>_client_stub.py``` file to client directory.
 
 ### 5.2 Metrics
-In the current version(V0.0.0) SRPC have it won simple metric module called ```SrpcMetric(srpc_metric.py)```.
+In the current version(v0.0.0) SRPC has its own simple metric module called ```SrpcMetric(srpc_metric.py)```.
 It is especified in the interface ```SrpcMetricsInterface(srpc_metrics_interface.py)``` look int the implementaion below in the file ```SrpcMetric(srpc_metric.py)```:
 
 ```python
@@ -593,7 +585,7 @@ class SrpcMetric(SrpcMetricsInterface):
             )
 ```
 
-The ideia is simple, mantain a list with metrics, and make updates on them not in memory but log it in a file.
+The idea is simple: maintain a list of metrics and make updates to them by logging them in a file rather than in memory.
 
 When ``` add_metric ``` is called it add in the list metric, a String, in the format ```<metric_name>.<metric_time>```.  \
 When ``` inc_counter_sucess ``` is called it just log the String ``` "<metric_name>.counter_success=1" ``` in a file ```srpc_server_metrics.log```.  \
@@ -656,11 +648,11 @@ look below an example of the the conten in a ```srpc_server_metrics.log``` file:
 
 >[!WARNING]
 > This feature have a Disk usage trap.  \
-> In the current version(V0.0.0) does not have an automatic "cleaner" for the file ```srpc_server_metrics.log```  \
+> In the current version(v0.0.0) does not have an automatic "cleaner" for the file ```srpc_server_metrics.log```  \
 > So the file size will grow indefinitely consequtently the use of the Disk.
 
 #### 5.2.1 The Live Dashboard
-The installation of the LIB came with the ```srpc_show_metrics``` utilitary. You can use it in the server it gonna read the file ```srpc_server_metrics.log```  \
+The installation of the library comes with the```srpc_show_metrics``` utility. You can use it in the server it gonna read the file ```srpc_server_metrics.log```  \
 To show the below metrics:
 - Count metrics
   - success counter
@@ -671,8 +663,8 @@ To show the below metrics:
   - total(ms)
   - avg(ms)
 
-The Ideia behind this tool is to "watch" the file ```srpc_server_metrics.log``` like the ```tail``` command in linux.
-When this tools is called it go to the end of the file and start watch for new lines every ```100ms```. look teh function below:
+The idea behind this tool is to "watch" the ```srpc_server_metrics.log``` file much like the ```tail``` command in linux.
+When this tool is called, it goes to the end of the file and starts watching for new lines every ```100ms```. look teh function below:
 ```python
 def follow(thefile):
     thefile.seek(0, os.SEEK_END)
@@ -686,7 +678,7 @@ def follow(thefile):
         yield line
 
 ```
-To undertand the use of ```yield``` and fully understand this function you need know about [Generators](https://en-wikipedia-org.translate.goog/wiki/Generator_(computer_programming)?_x_tr_sl=en&_x_tr_tl=pt&_x_tr_hl=pt&_x_tr_pto=tc).
+To understand the use of ```yield``` and fully understand this function, you need to know about [Generators](https://en-wikipedia-org.translate.goog/wiki/Generator_(computer_programming)?_x_tr_sl=en&_x_tr_tl=pt&_x_tr_hl=pt&_x_tr_pto=tc).
 
 I also have a pratical reference about iterators and generators [here](https://github.com/oseasandrepro/LPX).
 
@@ -734,7 +726,8 @@ You will see in something like the image below:
 > Here We are talkin about real concurrence since the server service(the writer) and the the srpc_show_metrics tool will run in
 > different process. So eventualy they can run in parallel - In a Multicore machine
 #### 5.2.2 Server-Side Logging
-While runing the server log in the console, informations about request being handled, and others.
+While running, the server logs information in the console about requests being handled and other events. In the current version, when a procedure call throws an exception, it is not logged in the server console; however, it probably should be.
+
 look below an example where the server started and the client call the ```add``` procedure:
 
 ```
@@ -747,7 +740,3 @@ look below an example where the server started and the client call the ```add```
 2026-07-15 21:39:52,652 [INFO] srpcLib.binder.srpc_server_binder: Total lookup requests: 1
 2026-07-15 21:39:52,653 [INFO] srpc_calc_server_stub: Request: ('add', 4, 2) from: 192.168.0.112
 ```
-
->[!NOTE]
->In the current version(V0.0.0) when a procedure call throws an exceptino it is not logged in the server console.  \
->I think should be.
