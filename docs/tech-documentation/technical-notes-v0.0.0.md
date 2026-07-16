@@ -59,9 +59,18 @@ Now the LIB only suport Python language.
 In the current stage of the project the technical aim is build a solid, extensibile and esay to refactor fundation.
 thinking from the users' perspective - programers - the aim is simplify the implementation of distributed processes while preserving a clean programming abstraction.
 
-Core Design Goals:
+**Core Design Goals:**
 - Rapid Prototyping: Minimal setup, and auto-generated network bindings.
 - Transparent Abstraction: Remote exceptions should feel like local exceptions to the client.
+
+**Features:**
+- Abstract type as IDL.
+- Plug-and-play architecture - install and start implementing immediately.
+- Remote exception propagation
+    - Serialization: Convert server-side exceptions.
+    - Rehydration: Raise equivalent exceptions on the client side.
+- Stub generation for server and client.
+- Live metrics dashboard, displaying call count and latency per procedure.
 
 ## 2. High-Level Architecture
 
@@ -129,7 +138,7 @@ where:
 - ```""``` represents the absence of an error message.
 - ```result```  is the rutn value of the procedure.
 
-If the call fails, it returns a tuple int the following format :  \
+If the call fails, it returns a tuple int the following format( the "Remote exception propagation" feature) :  \
 ```(<error_code>, <error_message>, <exception_class>)```
 
 The response is serialized and sent to the client using the ```sendall(...)``` method from Python's socket module.
@@ -615,8 +624,8 @@ def __handle_request(self, func_name, conn, addr):
                 result = self.__call_func(request_tuple)
                 end_time = time.time()  # End time measurement
                 response = ("200", "", result)
-                self.__mestrics.inc_counter_success(f"{func_name}")
-                self.__mestrics.record_time(f"{func_name}", end_time - start_time)
+                self.__mestrics.inc_counter_success(f"{func_name}") # <-------------------------------------
+                self.__mestrics.record_time(f"{func_name}", end_time - start_time) # <----------------------
             else:
                 raise SrpcProcUnvailException("The program cannot support the requested procedure.")
         except SrpcProcUnvailException as e:
@@ -625,13 +634,25 @@ def __handle_request(self, func_name, conn, addr):
         except Exception as e:
                 self.__logger.error(f"Function [{func_name}] call error: {e}")
                 response = ("500", str(e), type(e).__name__)
-                self.__mestrics.inc_counter_fail(f"{func_name}")
+                self.__mestrics.inc_counter_fail(f"{func_name}") # <------------------------------------------
         finally:
                 conn.sendall( self.__serializer.serialize(response))
 ...
 ```
+
+look below an example of the the conten in a ```srpc_server_metrics.log``` file:
+
+```
+2025-10-17 03:08:10,249 [INFO] srpcLib.metrics.srpc_metric: add.counter_success=1
+2025-10-17 03:08:10,249 [INFO] srpcLib.metrics.srpc_metric: add.time=0.007
+2025-10-17 03:08:10,250 [INFO] srpcLib.metrics.srpc_metric: mult.counter_success=1
+2025-10-17 03:08:10,251 [INFO] srpcLib.metrics.srpc_metric: mult.time=0.004
+2025-10-17 03:08:10,251 [INFO] srpcLib.metrics.srpc_metric: sub.counter_fail=1
+```
+
 > [!NOTE]
-> The start_time and end_time may be should count also the time to send the response not only the procedure time execution.
+> The start_time and end_time may be should count also the time to send the response not only the procedure time execution.  \
+> The thread that persist the logs in Disk could be a real parallel thread.
 
 >[!WARNING]
 > This feature have a Disk usage trap.  \
@@ -709,8 +730,24 @@ You will see in something like the image below:
 > So the use of memory will grow indefinitely. Therefore it is not recommend to use this tools a long period of time.
 
 > [!CAUTION]
-> From the point of view of OS/"low leve" architecture we could have concurrency to read/werite in the file ```srpc_server_metrics.log```.  \
+> From the point of view of OS we could have concurrency to read/werite in the file ```srpc_server_metrics.log```.  \
 > Here We are talkin about real concurrence since the server service(the writer) and the the srpc_show_metrics tool will run in
 > different process. So eventualy they can run in parallel - In a Multicore machine
 #### 5.2.2 Server-Side Logging
-While runing the server log in the console informations about request being handled.
+While runing the server log in the console, informations about request being handled, and others.
+look below an example where the server started and the client call the ```add``` procedure:
+
+```
+2026-07-15 21:38:19,900 [INFO] srpcLib.binder.srpc_server_binder: Binder listening on port 5000
+2026-07-15 21:38:19,901 [INFO] srpcLib.binder.srpc_server_binder: Function [add] registered on port #[41963]
+2026-07-15 21:38:19,902 [INFO] srpc_calc_server_stub: SRPC server started [tcp-192.168.0.112-5000]. press Ctrl+C to stop
+2026-07-15 21:38:19,903 [INFO] srpcLib.binder.srpc_server_binder: Function [mult] registered on port #[35329]
+2026-07-15 21:38:19,903 [INFO] srpcLib.binder.srpc_server_binder: Function [div] registered on port #[39701]
+2026-07-15 21:38:19,903 [INFO] srpcLib.binder.srpc_server_binder: Function [sub] registered on port #[44339]
+2026-07-15 21:39:52,652 [INFO] srpcLib.binder.srpc_server_binder: Total lookup requests: 1
+2026-07-15 21:39:52,653 [INFO] srpc_calc_server_stub: Request: ('add', 4, 2) from: 192.168.0.112
+```
+
+>[!NOTE]
+>In the current version(V0.0.0) when a procedure call throws an exceptino it is not logged in the server console.  \
+>I think should be.
