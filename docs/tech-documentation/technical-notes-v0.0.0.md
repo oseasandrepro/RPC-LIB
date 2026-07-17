@@ -41,9 +41,7 @@
 
 **How it works?** first, the caller process sends a call message that includes the procedure parameters to the server process. Then, the caller process waits for a reply message (blocks). Next, a process on the server side, which is dormant until the arrival of the call message, extracts the procedure parameters, computes the results, and sends a reply message. Finally, a process on the caller receives the reply message, extracts the results of the procedure, and the caller resumes execution.
 
-The Remote Procedure Call Flow figure (Figure 1) illustrates the RPC paradigm." - [RPC Model](https://www.ibm.com/docs/en/aix/7.3.0?topic=call-rpc-model).
-
-Figure 1. Remote Procedure Call Flow
+Check the below illustration:
 
 ![RPC model](../images/rpc_model.jpg)
 
