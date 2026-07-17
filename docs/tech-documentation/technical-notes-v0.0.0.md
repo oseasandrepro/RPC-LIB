@@ -35,11 +35,11 @@
 ## 1. Introduction & Concepts
 
 ### 1.1 Wat is RPC
-""In distributed computing, a remote procedure call (RPC) is an action in which a computer program causes a procedure to execute in a different address space of the current process (commonly on another computer on a shared computer network), which is written as if it were a local procedure call, without the programmer explicitly writing the details for the remote interaction. That is, the programmer writes essentially the same code whether the subroutine is local to the executing program, or remote. This is a form of server interaction (caller is client, executor is server), typically implemented via a request–response message passing system.The RPC model implies a level of location transparency, namely that calling procedures are largely the same whether they are local or remote, but usually, they are not identical, so local calls can be distinguished from remote calls. Remote calls are usually orders of magnitude slower and less reliable than local calls, so distinguishing them is important." - [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call).
+"In distributed computing, a remote procedure call (RPC) is an action in which a computer program causes a procedure to execute in a different address space of the current process (commonly on another computer on a shared computer network), which is written as if it were a local procedure call, without the programmer explicitly writing the details for the remote interaction. That is, the programmer writes essentially the same code whether the subroutine is local to the executing program, or remote. This is a form of server interaction (caller is client, executor is server), typically implemented via a request–response message passing system.The RPC model implies a level of [location transparency](https://en.wikipedia.org/wiki/Location_transparency), namely that calling procedures are largely the same whether they are local or remote, but usually, they are not identical, so local calls can be distinguished from remote calls. Remote calls are usually orders of magnitude slower and less reliable than local calls, so distinguishing them is important." - [Remote procedure call](https://en.wikipedia.org/wiki/Remote_procedure_call).
 
 **Every modern service mesh is a descendant of this idea - just with better cryptography and fewer open doors.**
 
-"How it works? First, the caller process sends a call message that includes the procedure parameters to the server process. Then, the caller process waits for a reply message (blocks). Next, a process on the server side, which is dormant until the arrival of the call message, extracts the procedure parameters, computes the results, and sends a reply message. Finally, a process on the caller receives the reply message, extracts the results of the procedure, and the caller resumes execution.
+**How it works?** first, the caller process sends a call message that includes the procedure parameters to the server process. Then, the caller process waits for a reply message (blocks). Next, a process on the server side, which is dormant until the arrival of the call message, extracts the procedure parameters, computes the results, and sends a reply message. Finally, a process on the caller receives the reply message, extracts the results of the procedure, and the caller resumes execution.
 
 The Remote Procedure Call Flow figure (Figure 1) illustrates the RPC paradigm." - [RPC Model](https://www.ibm.com/docs/en/aix/7.3.0?topic=call-rpc-model).
 
@@ -74,7 +74,7 @@ In the current stage of the project, the technical aim is to build a solid, exte
 In SRPC, a "Service" is defined strictly by its directory structure and Python naming conventions. This strictness enables the tooling to automatically generate network bindings.
 
 A valid service on the server side consists of:
-1. TThe Interface: An abstract class defining the methods.
+1. The Interface: An abstract class defining the methods.
    - The class name must follow the Interface pattern with an uppercase first letter (e.g., CalcInterface).
    - The class file name must follow the interface pattern with a lowercase first letter (e.g., calc_interface.py).
 2. The Implementation:
@@ -120,7 +120,7 @@ When a client connects, ```accepts()``` returns a new socket dedicated to that c
 The server expects the request to be a tuple in the following format: ```(func_name, parameters)```
 
 where:
--  ```func_name``` is the procedure of the procedure to invoke.
+-  ```func_name``` is the name of the procedure to invoke.
 - ```parameters``` is a Python  tuple containing the procedure's arguments.
 
 After deserializing the request, the server invokes the corresponding procedure.  \
@@ -209,7 +209,7 @@ self.__register_func_in_binder(func_name, port)
 ```
 The ```register_func_in_binder(func_name, port)``` is called for each procedure of the service.
 
-The ```LOOKUP``` is used in client side two get the dictionary of procedures and ports.
+The ```LOOKUP``` is used in client side to get the dictionary of procedures and ports.
 
 Check below how the class ```SrpcServerBinder(srpc_server_binder.py)``` handle this requests:
 ```python
@@ -238,7 +238,7 @@ def __handle_lookup_request(self, conn):
 
 #### 4.2.2 Client Binder
 A Client Binder gives the client application the ability to get the dictionary of procedures, with their correspondent ports, from the server.
-In SRPC a Client Binder is an object with that have ```binding_lookup``` method.
+In SRPC a Client Binder is an object that have ```binding_lookup``` method.
 
 So the client side will make this request ```("LOOKUP", None, None)``` to the server.  \
 The response is the dictionary mentioned in *4.2.1 Server Binder*.
@@ -273,7 +273,7 @@ The ```stop``` method will shut down the Binder thread and all procedure threads
 
 Each listener thread triggers ```n``` handler threads, and each handler thread executes a copy of its correspondent procedure.
 
-Internaly the binder uses a Thread pool look the code below:
+Internaly the binder uses a Thread pool, look the code below:
 ```python
 with ThreadPoolExecutor(max_workers=5) as pool:
     while not self.__shutdown_event.is_set():
@@ -286,7 +286,7 @@ And inside the server stub is triggered as below:
 binder_thread = threading.Thread(target=self.__binder.start_binder, name="binder_thread", daemon=True)
 ```
 
-Each procedure thread is trigrered as below:
+Each procedure thread listner is triggered as below:
 ```python
 for func_name in self.__lib_procedures_name:
     t = threading.Thread(None,
@@ -324,36 +324,27 @@ self.__executor = ThreadPoolExecutor(max_workers=10)
 ```
 
 > [!WARNING]
-> This "chain" of threads trigrering threads could affect the LIB performance.
+> This "chain" of threads triggering threads could affect the LIB performance.
 > We should review this.
 
 ##### 4.3.1.2 How it is generated
 The server stub is generated by the script in ```srpc_server_stub_gen.py```.
 In this script is used parametrizied strings for thinkgs like: ```DEFAULT_BINDER_PORT```, ```func_name```
 
-**below how Server Stub code look like**
+**below how generted Server Stub code look like**
 ```python
-class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
+class SrpcCalcServerStub(SrpcServerStubInterface):
     def __init__(self):
-        self.__mestrics = SrpcMetric("{log_path}")
-
-        self.__host = get_lan_ip_or_localhost()
-        self.__binder = SrpcServerBinder(self.__host)
-        self.__BINDER_PORT = {DEFAULT_BINDER_PORT}
         ...
 
-
     def __set_metrics(self, func_name):
-      ...
+        ...
 
     def __get_lib_procedures_name(self):
-        return [name for name, member in inspect.getmembers({interface_name}, predicate=inspect.isfunction)]
+        return [name for name, member in inspect.getmembers(CalcInterface, predicate=inspect.isfunction)]
 
     def __check_implements_interface(self, obj, interface):
-        if not isinstance(obj, interface):
-            logging.error(f"Object of type {{type(obj).__name__}} must implement interface {{interface.__name__}}")
-            self.__logger.error("Mission aborted.")
-            os._exit(1)
+        ...
 
     def __call_func(self, t: tuple):
         try:
@@ -377,8 +368,9 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
             if deserialized_response[0] != "200":
                 raise SrpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
-        ...
 
+            socket_cli.close()
+        ...
 
     def __handle_request(self, func_name, conn, addr):
         with conn:
@@ -387,16 +379,16 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                 request_tuple = self.__serializer.deserialize(msg)
 
                 if isinstance(request_tuple, tuple) and request_tuple[0] == func_name:
-                    self.__logger.info(f"Request: {{request_tuple}} from: {{addr[0]}}")
+                    self.__logger.info(f"Request: {request_tuple} from: {addr[0]}")
                     start_time = time.time()  # Start time measurement
                     result = self.__call_func(request_tuple)
                     end_time = time.time()  # End time measurement
                     response = ("200", "", result)
-                    self.__mestrics.inc_counter_success(f"{{func_name}}")
-                    self.__mestrics.record_time(f"{{func_name}}", end_time - start_time)
+                    self.__mestrics.inc_counter_success(f"{func_name}")
+                    self.__mestrics.record_time(f"{func_name}", end_time - start_time)
                 else:
                     raise SrpcProcUnvailException("The program cannot support the requested procedure.")
-        ...
+            ...
 
     def __listen_for_func(self, func_name):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -411,11 +403,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                 try:
                     conn, addr = s.accept()
                     self.__executor.submit(self.__handle_request, func_name, conn, addr)
-                except socket.timeout:
-                    continue
-                except Exception as e:
-                    self.__logger.error(f"An error occurred while listening for function [{{func_name}}] in port [{{port}}]: {{e}}")
-                    os._exit(1)
+        ...
 
     def start(self):
         stop_event = threading.Event()
@@ -425,22 +413,27 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
             for func_name in self.__lib_procedures_name:
                 t = threading.Thread(None,
                     target=self.__listen_for_func,
-                    name=f"Thread-Listener-for-func-{{func_name}}",
+                    name=f"Thread-Listener-for-func-{func_name}",
                     args=[func_name]
                     )
                 self.__threads.append(t)
                 t.start()
-            self.__logger.info(f"SRPC server started [tcp-{{self.__host}}-{DEFAULT_BINDER_PORT}]. press Ctrl+C to stop")
+            self.__logger.info(f"SRPC server started [tcp-{self.__host}-5000]. press Ctrl+C to stop")
             stop_event.wait()
         ...
 
     def stop(self):
-      ...
-"""
+        self.__binder.stop()
+        self.__logger.info("Stopping stub...")
+        self.__stop_event.set()
+        for t in self.__threads:
+            t.join()
+        self.__executor.shutdown(wait=True)
+        self.__logger.info("Stub successfully stopped.")
 ```
 
 #### 4.3.2 Client Stub & Threading Model
-In SRPC the Client Stub have internaly two classes ```SrpcClientStub```
+In SRPC the Client Stub have internaly two classes ```_SrpcClientStub```
 and ```Srpc<service-name>ClientStub```.
 
 ```Srpc<service-name>ClientStub``` is an internal class that handle network operations:
@@ -493,25 +486,13 @@ class _SrpcClientStub(SrpcClientStubInterface):
                 raise SrpcProcUnvailException(deserialized_response[1])
 
             return deserialized_response[2]
-
-        except SrpcCallException as e:
-            raise SrpcCallException(e.message, e.code)
-        except SrpcProcUnvailException as e:
-            self.__logger.error(f"Procedure {func_name} unavailable: {e.message}")
-        except socket.timeout:
-            self.__logger.error("Timeout occurred during RPC call.")
-        except socket.gaierror:
-            self.__logger.error(f"Network error: Unable to connect to the server.")
-        except ConnectionRefusedError:
-            self.__logger.error(f"Connection refused. Is the server running and reachable?")
-        except socket.error as e:
-            self.__logger.error(f"Socket error: {e}")
-        except OSError as e:
-            self.__logger.error(f"OS error during RPC call: {e}")
+    ...
 ```
 
 ```Srpc<service-name>ClientStub``` is a public class that implements the service interface and, uses ```SrpcClientStub```
-to make the remote calls. look below an example look below an example of generated code of ```Srpc<service-name>ClientStub``` class:
+to make the remote calls.
+
+ Look below an example of generated code of ```Srpc<service-name>ClientStub``` class:
 
 ```python
 class SrpcCalcClientStub(CalcInterface):
@@ -551,7 +532,7 @@ Move the ```srpc_<service-name>_client_stub.py``` file to client directory.
 
 ### 5.2 Metrics
 In the current version(v0.0.0) SRPC has its own simple metric module called ```SrpcMetric(srpc_metric.py)```.
-It is especified in the interface ```SrpcMetricsInterface(srpc_metrics_interface.py)``` look int the implementaion below in the file ```SrpcMetric(srpc_metric.py)```:
+It is especified in the interface ```SrpcMetricsInterface(srpc_metrics_interface.py)``` look to the implementaion below in the file ```SrpcMetric(srpc_metric.py)```:
 
 ```python
 class SrpcMetric(SrpcMetricsInterface):
@@ -592,7 +573,7 @@ When ``` inc_counter_sucess ``` is called it just log the String ``` "<metric_na
 When ``` inc_counter_fail ``` is called it just log the String  ``` "<metric_name>.counter_fail=1" ``` in the file ```srpc_server_metrics.log```.  \
 When ``` record_time ```is called it just log the String ```"<metric_name>.time=<time-in-seconds-between-before-and-after-call-the-correpondent-procedure>"```.  \
 
-look below an example of use of metricsc(``` add_metric```,``` inc_counter_sucess```, ``` inc_counter_fail ```):
+look below an example of use of metrics(``` add_metric```,``` inc_counter_sucess```, ``` inc_counter_fail ```):
 
 ```python
 def __init__(self):
@@ -656,7 +637,7 @@ The installation of the library comes with the```srpc_show_metrics``` utility. Y
 To show the below metrics:
 - Count metrics
   - success counter
-  - faulure counter
+  - failure counter
 - time metric
   - min(ms)
   - max(ms)
@@ -664,7 +645,7 @@ To show the below metrics:
   - avg(ms)
 
 The idea behind this tool is to "watch" the ```srpc_server_metrics.log``` file much like the ```tail``` command in linux.
-When this tool is called, it goes to the end of the file and starts watching for new lines every ```100ms```. look teh function below:
+When this tool is called, it goes to the end of the file and starts watching for new lines every ```100ms```. look the function below:
 ```python
 def follow(thefile):
     thefile.seek(0, os.SEEK_END)
@@ -712,7 +693,7 @@ The script of this tools is in ```srpc_show_metrics.py```
 
 Inside the server directory run this command ```python -m srpcLib.tools.srpc_show_metrics srpc_server_metrics.log```
 
-You will see in something like the image below:
+You will see something like the image below:
 
 ![The live Dashboard](../images/populated-metric-dashboard.png)
 
@@ -723,8 +704,8 @@ You will see in something like the image below:
 
 > [!CAUTION]
 > From the point of view of OS we could have concurrency to read/werite in the file ```srpc_server_metrics.log```.  \
-> Here We are talkin about real concurrence since the server service(the writer) and the the srpc_show_metrics tool will run in
-> different process. So eventualy they can run in parallel - In a Multicore machine
+> Here We are talking about real parallelism since the server service(the writer) and the the srpc_show_metrics tool will run in
+> different processes. So eventualy they can run in parallel - In a Multicore machine
 #### 5.2.2 Server-Side Logging
 While running, the server logs information in the console about requests being handled and other events. In the current version, when a procedure call throws an exception, it is not logged in the server console; however, it probably should be.
 
