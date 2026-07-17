@@ -21,7 +21,9 @@ class SrpcServerBinder(SrpcServerBinderInterface):
         self.__logger = logging.getLogger(__name__)
         self.__logger.setLevel(logging.INFO)
         self.__console_handler = logging.StreamHandler()
-        self.__formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+        self.__formatter = logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+        )
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
 
@@ -39,13 +41,17 @@ class SrpcServerBinder(SrpcServerBinderInterface):
             if request_tuple[0] == "LOOKUP":
                 response_tuple = ("200", "", self.__functions)
                 self.__total_lookup_request += 1
-                self.__logger.info(f"Total lookup requests: {self.__total_lookup_request}")
+                self.__logger.info(
+                    f"Total lookup requests: {self.__total_lookup_request}"
+                )
             elif request_tuple[0] == "REGISTER":
                 req_function = request_tuple[1]
                 port = request_tuple[2]
                 self.__functions[req_function] = port
                 response_tuple = ("200", "", None)
-                self.__logger.info(f"Function [{req_function}] registered on port #[{port}]")
+                self.__logger.info(
+                    f"Function [{req_function}] registered on port #[{port}]"
+                )
             else:
                 self.__logger.error(f"Unknown request type: {request_tuple[0]}")
                 response_tuple = ("500", "erro simulado", None)
@@ -76,7 +82,9 @@ class SrpcServerBinder(SrpcServerBinderInterface):
                     continue
                 except OSError as e:
                     if self.__shutdown_event.is_set():
-                        self.__logger.info("Binder shutdown event set. stopping server.")
+                        self.__logger.info(
+                            "Binder shutdown event set. stopping server."
+                        )
                         break
                     else:
                         self.__logger.error(
