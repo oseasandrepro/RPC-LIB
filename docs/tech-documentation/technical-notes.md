@@ -611,6 +611,10 @@ def __handle_request(self, func_name, conn, addr):
 ...
 ```
 
+>[!WARNING]
+> Log (in a file our in console) in the same thread or in a concorrent thread
+> of the procedure execution can affect performance.
+
 look below an example of the the conten in a ```srpc_server_metrics.log``` file:
 
 ```
