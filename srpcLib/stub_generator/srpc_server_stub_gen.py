@@ -1,6 +1,6 @@
 import logging
 
-from ..utils.srpc_stub_util import DEFAULT_BINDER_PORT
+from ..utils.srpc_stub_util import DEFAULT_BINDER_PORT, DEFAULT_CONNECTION_PORT
 
 logger = logging.getLogger(__name__)
 log_path = "./srpc_server_metrics.log"
@@ -38,6 +38,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__host = get_lan_ip_or_localhost()
         self.__binder = SrpcServerBinder(self.__host)
         self.__BINDER_PORT = {DEFAULT_BINDER_PORT}
+        self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
 
         self.__lib_procedures_name = self.__get_lib_procedures_name()
         self.__executor = ThreadPoolExecutor(max_workers=10)
@@ -104,15 +105,15 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
             self.__logger.error("Mission aborted.")
             os._exit(1)
 
-
-    def __handle_request(self, func_name, conn, addr):
-        with conn:
+    def __handle_request(self, client_socket, client_addr):
+        with client_socket:
             try:
-                msg = conn.recv(1024)
+                msg = client_socket.recv(1024)
                 request_tuple = self.__serializer.deserialize(msg)
+                func_name = request_tuple[0]
 
-                if isinstance(request_tuple, tuple) and request_tuple[0] == func_name:
-                    self.__logger.info(f"Request: {{request_tuple}} from: {{addr[0]}}")
+                if isinstance(request_tuple, tuple):
+                    self.__logger.info(f"Request: {{request_tuple}} from: {{client_addr[0]}}")
                     start_time = time.time()  # Start time measurement
                     result = self.__call_func(request_tuple)
                     end_time = time.time()  # End time measurement
@@ -129,25 +130,24 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                 response = ("500", str(e), type(e).__name__)
                 self.__mestrics.inc_counter_fail(f"{{func_name}}")
             finally:
-                conn.sendall( self.__serializer.serialize(response))
+                client_socket.sendall( self.__serializer.serialize(response))
 
-    def __listen_for_func(self, func_name):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            s.bind((self.__host, 0))
-            port = s.getsockname()[1]
-            self.__register_func_in_binder(func_name, port)
-            s.listen()
-            s.settimeout(1.0)
+    def __listner(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listner_socket:
+            listner_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            listner_socket.bind((self.__host, self.__CONNECTION_PORT))
+            port = listner_socket.getsockname()[1]
+            listner_socket.listen()
+            listner_socket.settimeout(1.0)
 
             while not self.__stop_event.is_set():
                 try:
-                    conn, addr = s.accept()
-                    self.__executor.submit(self.__handle_request, func_name, conn, addr)
+                    client_socket, client_addr = listner_socket.accept()
+                    self.__executor.submit(self.__handle_request, client_socket, client_addr)
                 except socket.timeout:
                     continue
                 except Exception as e:
-                    self.__logger.error(f"An error occurred while listening for function [{{func_name}}] in port [{{port}}]: {{e}}")
+                    self.__logger.error(f"An error occurred while listening for users requests in port [{{port}}]: {{e}}")
                     os._exit(1)
 
     def start(self):
@@ -156,14 +156,13 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
         binder_thread.start()
         try:
             for func_name in self.__lib_procedures_name:
-                t = threading.Thread(None,
-                    target=self.__listen_for_func,
-                    name=f"Thread-Listener-for-func-{{func_name}}",
-                    args=[func_name]
-                    )
-                self.__threads.append(t)
-                t.start()
-            self.__logger.info(f"SRPC server started [tcp-{{self.__host}}-{DEFAULT_BINDER_PORT}]. press Ctrl+C to stop")
+                self.__register_func_in_binder(func_name, self.__CONNECTION_PORT)
+
+            t = threading.Thread(None,target=self.__listner,name=f"SRPC Thread-Listener")
+            self.__threads.append(t)
+            t.start()
+            self.__logger.info(f"Procedurs call on [tcp-{{self.__host}}:{{self.__CONNECTION_PORT}}].")
+            self.__logger.info(f"press Ctrl+C to stop.")
             stop_event.wait()
         except KeyboardInterrupt:
             self.stop()
