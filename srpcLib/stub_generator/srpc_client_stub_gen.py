@@ -16,7 +16,6 @@ def gen_client_stub(interface_file_name, interface_name, dictionary_of_methods: 
 import socket
 import logging
 from {lib_name}.utils.srpc_serializer import SrpcSerializer
-from {lib_name}.binder.srpc_client_binder import SrpcClientBinder
 from {lib_name}.srpc_exceptions import SrpcCallException, SrpcProcUnvailException
 from {lib_name}.interface.srpc_client_stub_interface import SrpcClientStubInterface
 
