@@ -35,12 +35,12 @@ class _SrpcClientStub(SrpcClientStubInterface):
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
 
-    def remote_call(self, func_name, parameters: tuple):
+    def remote_call(self, procedure_name, parameters: tuple):
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socket_cli.connect((self.__server_host, self.__connection_port))
 
-            request = (func_name, *parameters)
+            request = (procedure_name, *parameters)
             serialized_request = self.__serializer.serialize(request)
             socket_cli.sendall(serialized_request)
 
@@ -58,7 +58,7 @@ class _SrpcClientStub(SrpcClientStubInterface):
         except SrpcCallException as e:
             raise SrpcCallException(e.message, e.code)
         except SrpcProcUnvailException as e:
-            self.__logger.error(f"Procedure {{func_name}} unavailable: {{e.message}}")
+            self.__logger.error(f"Procedure {{procedure_name}} unavailable: {{e.message}}")
         except socket.timeout:
             self.__logger.error("Timeout occurred during RPC call.")
         except socket.gaierror:
