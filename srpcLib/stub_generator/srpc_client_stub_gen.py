@@ -1,6 +1,10 @@
 import logging
 
-from ..utils.srpc_stub_util import build_param_tuple, extract_params_from_method_sig
+from ..utils.srpc_stub_util import (
+    DEFAULT_CONNECTION_PORT,
+    build_param_tuple,
+    extract_params_from_method_sig,
+)
 
 logger = logging.getLogger(__name__)
 lib_name = "srpcLib"
@@ -12,7 +16,6 @@ def gen_client_stub(interface_file_name, interface_name, dictionary_of_methods: 
 import socket
 import logging
 from {lib_name}.utils.srpc_serializer import SrpcSerializer
-from {lib_name}.binder.srpc_client_binder import SrpcClientBinder
 from {lib_name}.srpc_exceptions import SrpcCallException, SrpcProcUnvailException
 from {lib_name}.interface.srpc_client_stub_interface import SrpcClientStubInterface
 
@@ -20,11 +23,10 @@ from {module_name}.{module_name}_interface import {interface_name}
 
 class _SrpcClientStub(SrpcClientStubInterface):
 
-    def __init__(self, server_host):
+    def __init__(self, server_host, port):
         self.__serializer = SrpcSerializer()
         self.__server_host = server_host
-        self.__functions = {{}}
-        self.__bind()
+        self.__connection_port = port
 
         self.__logger = logging.getLogger(__name__)
         self.__logger.setLevel(logging.INFO)
@@ -33,16 +35,12 @@ class _SrpcClientStub(SrpcClientStubInterface):
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
 
-    def __bind(self):
-        binder = SrpcClientBinder(self.__server_host)
-        self.__functions = binder.binding_lookup()
-
-    def remote_call(self, func_name, parameters: tuple):
+    def remote_call(self, procedure_name, parameters: tuple):
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            socket_cli.connect((self.__server_host, self.__functions[func_name]))
+            socket_cli.connect((self.__server_host, self.__connection_port))
 
-            request = (func_name, *parameters)
+            request = (procedure_name, *parameters)
             serialized_request = self.__serializer.serialize(request)
             socket_cli.sendall(serialized_request)
 
@@ -60,7 +58,7 @@ class _SrpcClientStub(SrpcClientStubInterface):
         except SrpcCallException as e:
             raise SrpcCallException(e.message, e.code)
         except SrpcProcUnvailException as e:
-            self.__logger.error(f"Procedure {{func_name}} unavailable: {{e.message}}")
+            self.__logger.error(f"Procedure {{procedure_name}} unavailable: {{e.message}}")
         except socket.timeout:
             self.__logger.error("Timeout occurred during RPC call.")
         except socket.gaierror:
@@ -73,8 +71,8 @@ class _SrpcClientStub(SrpcClientStubInterface):
             self.__logger.error(f"OS error during RPC call: {{e}}")
 
 class Srpc{module_name.capitalize()}ClientStub({interface_name}):
-    def __init__(self, server_host='127.0.0.1'):
-        self.__client_stub = _SrpcClientStub(server_host)
+    def __init__(self, server_host='127.0.0.1', port = {DEFAULT_CONNECTION_PORT}):
+        self.__client_stub = _SrpcClientStub(server_host, port)
 """
     methods = """"""
     for key, value in dictionary_of_methods.items():

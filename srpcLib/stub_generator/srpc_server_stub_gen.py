@@ -1,6 +1,6 @@
 import logging
 
-from ..utils.srpc_stub_util import DEFAULT_BINDER_PORT, DEFAULT_CONNECTION_PORT
+from ..utils.srpc_stub_util import DEFAULT_CONNECTION_PORT
 
 logger = logging.getLogger(__name__)
 log_path = "./srpc_server_metrics.log"
@@ -21,9 +21,8 @@ import os
 
 from {lib_name}.metrics.srpc_metrics_types import SrpcmetricsTypes
 from {lib_name}.metrics.srpc_metric import SrpcMetric
-from {lib_name}.binder.srpc_server_binder import SrpcServerBinder
 from {lib_name}.utils.srpc_serializer import SrpcSerializer
-from {lib_name}.srpc_exceptions import SrpcBinderRequestException, SrpcProcUnvailException
+from {lib_name}.srpc_exceptions import SrpcProcUnvailException
 from {lib_name}.interface.srpc_server_stub_interface import SrpcServerStubInterface
 from {lib_name}.utils.srpc_network_util import get_lan_ip_or_localhost
 import logging
@@ -36,8 +35,6 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__mestrics = SrpcMetric("{log_path}")
 
         self.__host = get_lan_ip_or_localhost()
-        self.__binder = SrpcServerBinder(self.__host)
-        self.__BINDER_PORT = {DEFAULT_BINDER_PORT}
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
 
         self.__lib_procedures_name = self.__get_lib_procedures_name()
@@ -47,6 +44,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__serializer = SrpcSerializer()
         self.__lib_procedures = {server_class_name}()
         self.__check_implements_interface(self.__lib_procedures, {interface_name})
+        self.__set_metrics()
 
         self.__logger = logging.getLogger(__name__)
         self.__logger.setLevel(logging.INFO)
@@ -56,10 +54,11 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__logger.addHandler(self.__console_handler)
 
 
-    def __set_metrics(self, procedure_name):
-        self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.COUNTER_SUCCESS)
-        self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.COUNTER_FAIL)
-        self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.TIME)
+    def __set_metrics(self):
+        for procedure_name in self.__lib_procedures_name:
+            self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.COUNTER_SUCCESS)
+            self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.COUNTER_FAIL)
+            self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.TIME)
 
     def __get_lib_procedures_name(self):
         return [name for name, member in inspect.getmembers({interface_name}, predicate=inspect.isfunction)]
@@ -76,34 +75,6 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
             return method(*t[1:])
         except AttributeError:
             return None
-
-    def __register_procedure_in_binder(self, procedure_name, port):
-        #setting metric for Procedure
-        self.__set_metrics(procedure_name)
-        try:
-            socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            socket_cli.connect((self.__host, self.__BINDER_PORT))
-            request = ("REGISTER", procedure_name, port)
-            serialized_request = self.__serializer.serialize(request)
-            socket_cli.sendall(serialized_request)
-
-            serialized_response = socket_cli.recv(1024)
-            deserialized_response = self.__serializer.deserialize(serialized_response)
-
-            if deserialized_response[0] != "200":
-                raise SrpcBinderRequestException(deserialized_response[1], code=deserialized_response[0])
-
-            socket_cli.close()
-        except socket.timeout:
-            self.__logger.error(f"Timeout occurred during RPC bind for procedure [{{procedure_name}}].")
-        except OSError as e:
-            self.__logger.error(f"An error occurred during procedure [{{procedure_name}}] registration: {{e}}")
-            self.__logger.error("Mission aborted.")
-            os._exit(1)
-        except SrpcBinderRequestException as e:
-            self.__logger.error(f"RPC Binder returns an error response during procedure [{{procedure_name}}] registration: {{e}}")
-            self.__logger.error("Mission aborted.")
-            os._exit(1)
 
     def __handle_request(self, client_socket, client_addr):
         with client_socket:
@@ -152,12 +123,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
     def start(self):
         stop_event = threading.Event()
-        binder_thread = threading.Thread(target=self.__binder.start_binder, name="binder_thread", daemon=True)
-        binder_thread.start()
         try:
-            for procedure_name in self.__lib_procedures_name:
-                self.__register_procedure_in_binder(procedure_name, self.__CONNECTION_PORT)
-
             t = threading.Thread(None,target=self.__listner,name=f"SRPC Thread-Listener")
             self.__threads.append(t)
             t.start()
@@ -172,7 +138,6 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
             os._exit(1)
 
     def stop(self):
-        self.__binder.stop()
         self.__logger.info("Stopping stub...")
         self.__stop_event.set()
         for t in self.__threads:
