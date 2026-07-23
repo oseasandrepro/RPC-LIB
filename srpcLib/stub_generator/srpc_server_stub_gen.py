@@ -83,7 +83,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
                 request_tuple = self.__serializer.deserialize(msg)
                 procedure_name = request_tuple[0]
 
-                if isinstance(request_tuple, tuple):
+                if isinstance(request_tuple, list):
                     self.__logger.info(f"Request: {{request_tuple}} from: {{client_addr[0]}}")
                     start_time = time.time()  # Start time measurement
                     result = self.__call_procedure(request_tuple)

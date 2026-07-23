@@ -1,12 +1,12 @@
-import pickle
+import msgpack
 
 from ..interface.srpc_serializer_interface import SrpcSerializerInterface
 
 
 class SrpcSerializer(SrpcSerializerInterface):
     def serialize(self, data):
-        return pickle.dumps(data)
+        return msgpack.packb(data)
 
     def deserialize(self, data):
-        deserialized_data = pickle.loads(data)
+        deserialized_data = msgpack.unpackb(data)
         return deserialized_data
