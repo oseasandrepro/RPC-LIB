@@ -8,8 +8,7 @@ from types import ModuleType
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BINDER_PORT = 5000
-DEFAULT_CONNECTION_PORT = 49152
+DEFAULT_CONNECTION_PORT = 5000
 
 
 def load_module_from_path(path: str) -> ModuleType:
