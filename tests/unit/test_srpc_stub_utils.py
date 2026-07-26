@@ -33,6 +33,6 @@ class TestSrpcStubUtils:
         assert passed is True
 
     def test_check_file_type_hints_fail(self):
-        file_path = "tests/test_resources/calc/calc_interface_inconsistent.py"
+        file_path = "tests/test_resources/calc/calcinconsistent_interface.py."
         passed, msg = srpc_stub_util.check_file_type_hints(file_path)
         assert passed is False
