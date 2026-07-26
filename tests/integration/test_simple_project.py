@@ -15,6 +15,7 @@ STUB_GEN_SCRIPT = "srpcLib.tools.srpc_stub_gen"
 SERVER_STUB_SCRIPT = "srpc_calc_server_stub.py"
 CLIENT_STUB_SCRIPT = "srpc_calc_client_stub.py"
 INTERFACE_DEF = TEST_PROJECT / "calc/calc_interface.py"
+INTERFACE_DEF_INCONSISTENT = TEST_PROJECT / "calc/calcinconsistent_interface.py"
 
 SERVER_SCRIPT = "server.py"
 CLIENT_SCRIPT = "client.py"
@@ -109,6 +110,27 @@ def server_process(generate_stubs, request):
 
     request.addfinalizer(finalizer)
     yield proc
+
+
+def test_type_hint_checker_fail():
+    result = subprocess.run(
+        [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_DEF_INCONSISTENT}"],
+        cwd=TEST_PROJECT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+
+    expected_output = "INFO | srpcLib.utils.srpc_stub_util : Interface CalcinconsistentInterface found in module calcinconsistent_interface.\nERROR | srpcLib.utils.srpc_stub_util : Check type hint.\ncalc/calcinconsistent_interface.py:6: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]\nFound 1 error in 1 file (checked 1 source file)\n\n"
+    assert result.stderr[-351:] == expected_output, "Expect hint checker fail"
+
+
+def test_type_hint_checker_sucess(generate_stubs):
+    # Assert generated scripts exist
+    server_file = TEST_PROJECT / SERVER_STUB_SCRIPT
+    client_file = TEST_PROJECT / CLIENT_STUB_SCRIPT
+    assert server_file.exists(), f"Missing server stub: {server_file}"
+    assert client_file.exists(), f"Missing client stub: {client_file}"
 
 
 def test_rpc_the_for_operations_of_calc(server_process, generate_stubs):

@@ -150,7 +150,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
         f.write(code)
 
     logger.info(f"Server stub successfully generated: {server_stub_file_name}")
-    logger.info(
-        f"You must implement the Class '{server_class_name}' that implements '{interface_name}', "
-        f"inside '{module_name}.py' file."
-    )
+    # logger.info(
+    #     f"You must implement the Class '{server_class_name}' that implements '{interface_name}', "
+    #     f"inside '{module_name}.py' file."
+    # )
