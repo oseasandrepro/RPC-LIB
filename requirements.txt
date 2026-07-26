@@ -5,3 +5,4 @@ flake8>=3.4.0
 isort>=5.13.2
 rich>=13.7.0
 msgpack==1.2.1
+mypy>=2.3.0

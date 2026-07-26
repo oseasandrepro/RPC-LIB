@@ -2,6 +2,7 @@ import importlib.util
 import inspect
 import logging
 import os
+import subprocess
 import sys
 from abc import ABC
 from types import ModuleType
@@ -99,3 +100,42 @@ def build_param_tuple(params: list[str]) -> str:
         return f"({params[0]},)"
     else:
         return f"({', '.join(params)})"
+
+
+def get_service_name(full_interface_path: str):
+    full_interface_path = os.path.basename(full_interface_path).split(".")[0]
+    return full_interface_path.split("_")[0]
+
+
+def get_service_dir(full_interface_path: str):
+    return os.path.dirname(full_interface_path)
+
+
+def check_file_type_hints(file_path: str) -> tuple[bool, str]:
+    result = subprocess.run(
+        ["mypy", "--disallow-untyped-defs", file_path], capture_output=True, text=True
+    )
+    output = result.stdout
+    if output[0:7] == "Success":
+        return True, ""
+    else:
+        return False, output
+
+
+def check_service_defination(full_interface_path: str):
+    service_name = get_service_name(full_interface_path)
+    service_dir = get_service_dir(full_interface_path)
+
+    interface_impl_full_path = f"{service_dir}/{service_name}.py"
+
+    try:
+        passed, msg = check_file_type_hints(full_interface_path)
+        if not passed:
+            raise ValueError(f"Check type hint.\n{msg}")
+
+        passed, msg = check_file_type_hints(interface_impl_full_path)
+        if not passed:
+            raise ValueError(f"Check type hint.\n{msg}")
+    except ValueError as e:
+        logger.error(str(e))
+        exit(1)
