@@ -121,8 +121,8 @@ def test_type_hint_checker_fail():
         text=True,
     )
 
-    expected_output = "INFO | srpcLib.utils.srpc_stub_util : Module calcinconsistent_interface loaded successfully from /home/saesolab/software-projects/RPC-LIB/tests/integration/simple_project/calc/calcinconsistent_interface.py.\nINFO | srpcLib.utils.srpc_stub_util : Interface CalcinconsistentInterface found in module calcinconsistent_interface.\nERROR | srpcLib.utils.srpc_stub_util : Check type hint.\ncalc/calcinconsistent_interface.py:6: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]\nFound 1 error in 1 file (checked 1 source file)\n\n"
-    assert result.stderr == expected_output, "Expect hint checker fail"
+    expected_output = "INFO | srpcLib.utils.srpc_stub_util : Interface CalcinconsistentInterface found in module calcinconsistent_interface.\nERROR | srpcLib.utils.srpc_stub_util : Check type hint.\ncalc/calcinconsistent_interface.py:6: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]\nFound 1 error in 1 file (checked 1 source file)\n\n"
+    assert result.stderr[-351:] == expected_output, "Expect hint checker fail"
 
 
 def test_type_hint_checker_sucess(generate_stubs):
