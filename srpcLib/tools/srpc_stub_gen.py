@@ -5,6 +5,7 @@ from os import path
 from ..stub_generator.srpc_client_stub_gen import gen_client_stub
 from ..stub_generator.srpc_server_stub_gen import gen_server_stub
 from ..utils.srpc_stub_util import (
+    check_service_defination,
     get_interface_from_module,
     get_methodname_signature_map_from_interface,
     load_module_from_path,
@@ -33,6 +34,8 @@ if __name__ == "__main__":
     interface = get_interface_from_module(module)
     file_name = path.basename(args.path)
     interface_name = interface.__name__
+
+    check_service_defination(args.path)
 
     gen_client_stub(
         file_name,
