@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class CalcInterfaceInconsistent(ABC):
+class CalcinconsistentInterface(ABC):
     @abstractmethod
     def add(self, a, b) -> int:
         pass
