@@ -13,3 +13,6 @@ class Calc(CalcInterface):
 
     def div(self, a: int, b: int) -> float:
         return a / b
+
+    def hello_world(self):
+        return "Hello world!"
