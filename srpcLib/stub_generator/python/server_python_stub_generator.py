@@ -1,38 +1,82 @@
 import logging
+import textwrap
 
-from ..utils.srpc_stub_util import DEFAULT_CONNECTION_PORT
+from ...interface.srpc_stub_generator_interface import SrpcStubGeneratorInterface
+from ...utils.srpc_stub_util import (
+    DEFAULT_CONNECTION_PORT,
+    LIB_NAME,
+    LOG_PATH,
+    get_service_interface_class_name,
+    get_service_name,
+)
+from ..language import Language
+from ..stub_type import StubType
 
 logger = logging.getLogger(__name__)
-log_path = "./srpc_server_metrics.log"
-lib_name = "srpcLib"
 
-
-def gen_server_stub(interface_file_name, interface_name):
-    module_name = interface_file_name.split("_")[0]
-    server_class_name = module_name[0].upper() + module_name[1:]
-
-    code = f"""
+str_imports = textwrap.dedent(
+    f"""
 from concurrent.futures import ThreadPoolExecutor
+from abc import ABC, abstractmethod
 import socket
 import threading
 import inspect
 import time
 import os
 
-from {lib_name}.metrics.srpc_metrics_types import SrpcmetricsTypes
-from {lib_name}.metrics.srpc_metric import SrpcMetric
-from {lib_name}.utils.srpc_serializer import SrpcSerializer
-from {lib_name}.srpc_exceptions import SrpcProcUnvailException
-from {lib_name}.interface.srpc_server_stub_interface import SrpcServerStubInterface
-from {lib_name}.utils.srpc_network_util import get_lan_ip_or_localhost
+from {LIB_NAME}.metrics.srpc_metrics_types import SrpcmetricsTypes
+from {LIB_NAME}.metrics.srpc_metric import SrpcMetric
+from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
+from {LIB_NAME}.srpc_exceptions import SrpcProcUnvailException
+from {LIB_NAME}.utils.srpc_network_util import get_lan_ip_or_localhost
 import logging
 
-from {module_name}.{module_name} import {server_class_name}
-from {module_name}.{module_name}_interface import {interface_name}
+"""
+).lstrip()
 
-class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
+str_server_stub_interface = textwrap.dedent(
+    """
+class SrpcServerStubInterface(ABC):
+    @abstractmethod
+    def stop(self):
+        pass
+
+    @abstractmethod
+    def start(self):
+        pass
+
+    """
+).lstrip()
+
+
+class ServerPythonStubGenerator(SrpcStubGeneratorInterface):
+    type = StubType.SERVER
+    language = Language.PYTHON
+
+    def __init__(self, interface_path: str):
+        self.interface_path = interface_path
+
+    def get_type(self):
+        return self.type
+
+    def get_language(self):
+        return self.language
+
+    def generate_stub(self, dest_path: str = None):
+        service_interface_class_name = get_service_interface_class_name(
+            self.interface_path
+        )
+        service_name = get_service_name(self.interface_path)
+        service_class_name = service_name.capitalize()
+
+        str_service_class = textwrap.dedent(
+            f"""
+from {service_name}.{service_name} import {service_class_name}
+from {service_name}.{service_name}_interface import {service_interface_class_name}
+
+class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
     def __init__(self):
-        self.__mestrics = SrpcMetric("{log_path}")
+        self.__mestrics = SrpcMetric("{LOG_PATH}")
 
         self.__host = get_lan_ip_or_localhost()
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
@@ -42,8 +86,8 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__threads = []
         self.__stop_event = threading.Event()
         self.__serializer = SrpcSerializer()
-        self.__lib_procedures = {server_class_name}()
-        self.__check_implements_interface(self.__lib_procedures, {interface_name})
+        self.__lib_procedures = {service_class_name}()
+        self.__check_implements_interface(self.__lib_procedures, {service_interface_class_name})
         self.__set_metrics()
 
         self.__logger = logging.getLogger(__name__)
@@ -61,7 +105,7 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
             self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.TIME)
 
     def __get_lib_procedures_name(self):
-        return [name for name, member in inspect.getmembers({interface_name}, predicate=inspect.isfunction)]
+        return [name for name, member in inspect.getmembers({service_interface_class_name}, predicate=inspect.isfunction)]
 
     def __check_implements_interface(self, obj, interface):
         if not isinstance(obj, interface):
@@ -144,13 +188,29 @@ class Srpc{module_name.capitalize()}ServerStub(SrpcServerStubInterface):
             t.join()
         self.__executor.shutdown(wait=True)
         self.__logger.info("Stub successfully stopped.")
-"""
-    server_stub_file_name = f"srpc_{module_name}_server_stub.py"
-    with open(server_stub_file_name, "w") as f:
-        f.write(code)
 
-    logger.info(f"Server stub successfully generated: {server_stub_file_name}")
-    # logger.info(
-    #     f"You must implement the Class '{server_class_name}' that implements '{interface_name}', "
-    #     f"inside '{module_name}.py' file."
-    # )
+        """
+        ).lstrip()
+
+        stub_code = str_imports + str_server_stub_interface + str_service_class
+
+        # server_stub_file_name = f"{dest_path + "/" if dest_path else ""}srpc_{service_name}_server_stub.py"
+        server_stub_file_name = (
+            f"{dest_path}/srpc_{service_name}_server_stub.py"
+            if dest_path
+            else f"srpc_{service_name}_server_stub.py"
+        )
+
+        with open(server_stub_file_name, "w") as f:
+            f.write(stub_code)
+
+        logger.info(f"Server stub successfully generated: {server_stub_file_name}")
+
+
+# python -m srpcLib.stub_generator.client_python_stub_generator
+if __name__ == "__main__":
+    stub_gen = ServerPythonStubGenerator(
+        "/home/saesolab/software-experiments/rpc-experiment/calc/calc_interface.py"
+    )
+    print(f"{stub_gen.get_type()}, {stub_gen.get_language()}")
+    stub_gen.generate_stub()

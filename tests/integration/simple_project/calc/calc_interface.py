@@ -17,3 +17,7 @@ class CalcInterface(ABC):
     @abstractmethod
     def div(self, a: int, b: int) -> float:
         pass
+
+    @abstractmethod
+    def hello_world(self) -> str:
+        pass

@@ -5,11 +5,36 @@ import os
 import subprocess
 import sys
 from abc import ABC
-from types import ModuleType
+from pathlib import Path
+from types import FunctionType, ModuleType
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONNECTION_PORT = 5000
+LIB_NAME = "srpcLib"
+LOG_PATH = "./srpc_server_metrics.log"
+
+
+def get_service_name(full_interface_path: str):
+    interface_file_name = os.path.basename(full_interface_path).split(".")[0]
+    return interface_file_name.split("_")[0]
+
+
+def get_service_interface_class_name(full_interface_path: str) -> str:
+    interface_file_name = os.path.basename(full_interface_path).split(".")[0]
+    chunks = interface_file_name.split("_")
+    class_name = ""
+    for chunk in chunks:
+        class_name += chunk.capitalize()
+    return class_name
+
+
+def remove_type_hint_from_param_list(param_list: list[str]) -> list[str]:
+    return [param_str.split(":")[0] for param_str in param_list]
+
+
+def get_service_dir(full_interface_path: str):
+    return os.path.dirname(full_interface_path)
 
 
 def load_module_from_path(path: str) -> ModuleType:
@@ -55,66 +80,20 @@ def get_interface_from_module(module: ModuleType) -> ABC:
         return interface
 
 
-def get_methodname_signature_map_from_interface(interface) -> dict[str, str]:
-    dictionary = {}
-    try:
-        if not inspect.isclass(interface) or not issubclass(interface, ABC):
-            raise TypeError("Provided interface is not a valid ABC class.")
-
-        for name, func in inspect.getmembers(interface, inspect.isfunction):
-            dictionary[name] = inspect.signature(func).__str__()
-
-    except TypeError as e:
-        logger.error(str(e))
-        return {}
-    else:
-        logger.info(
-            f"Methods and signatures extracted successfully from interface {interface.__name__}."
-        )
-        return dictionary
-
-
-def extract_params_from_method_sig(method_signature: str) -> list[str]:
-    start = method_signature.find("(")
-    end = method_signature.find(")", start)
-    params = []
-    method_signature_raw = method_signature.split("->")[0].strip("()")
-    try:
-        if start == -1 or end == -1:
-            raise ValueError("Invalid signature format")
-
-        param_block = method_signature_raw.split(",")
-        param_block.remove("self")
-
-        for raw_param in param_block:
-            params.append(raw_param.split(":")[0].strip())
-    except ValueError as e:
-        logger.error(str(e))
-        exit(1)
-    else:
-        return params
-
-
-def build_param_tuple(params: list[str]) -> str:
-    if len(params) == 1:
-        return f"({params[0]},)"
-    else:
-        return f"({', '.join(params)})"
-
-
-def get_service_name(full_interface_path: str):
-    full_interface_path = os.path.basename(full_interface_path).split(".")[0]
-    return full_interface_path.split("_")[0]
-
-
-def get_service_dir(full_interface_path: str):
-    return os.path.dirname(full_interface_path)
-
-
 def check_file_type_hints(file_path: str) -> tuple[bool, str]:
     result = subprocess.run(
-        ["mypy", "--disallow-untyped-defs", file_path], capture_output=True, text=True
+        [
+            sys.executable,
+            "-m",
+            "mypy",
+            "--disallow-untyped-defs",
+            file_path,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
     )
+
     output = result.stdout
     if output[0:7] == "Success":
         return True, ""
@@ -122,20 +101,66 @@ def check_file_type_hints(file_path: str) -> tuple[bool, str]:
         return False, output
 
 
-def check_service_defination(full_interface_path: str):
-    service_name = get_service_name(full_interface_path)
-    service_dir = get_service_dir(full_interface_path)
-
-    interface_impl_full_path = f"{service_dir}/{service_name}.py"
-
+def check_service_definition(full_interface_path: str):
+    file_path = Path(full_interface_path)
+    if not (file_path.suffix == ".py"):
+        raise ValueError(f"{full_interface_path} is not a .py file")
     try:
         passed, msg = check_file_type_hints(full_interface_path)
-        if not passed:
-            raise ValueError(f"Check type hint.\n{msg}")
-
-        passed, msg = check_file_type_hints(interface_impl_full_path)
         if not passed:
             raise ValueError(f"Check type hint.\n{msg}")
     except ValueError as e:
         logger.error(str(e))
         exit(1)
+
+
+def get_proc_id_dict(full_interface_path: str) -> dict[str, int]:
+    module = load_module_from_path(full_interface_path)
+    interface = get_interface_from_module(module)
+
+    index: int = 0
+    procs = {}
+    procedures = {
+        name: obj
+        for name, obj in interface.__dict__.items()
+        if inspect.isfunction(obj) and not name.startswith("__")
+    }
+    for proc_name in procedures:
+        procs[proc_name] = index
+        index = index + 1
+
+    return procs
+
+
+def get_proc_param_list(proc: FunctionType) -> str:
+    sig = inspect.signature(proc)
+    formatted_args = []
+    for name, param in sig.parameters.items():
+        if name not in ("self", "cls"):
+            # Get the class name as a string (e.g., 'int') [1]
+            type_name = (
+                param.annotation.__name__
+                if param.annotation is not inspect.Parameter.empty
+                else "Any"
+            )
+            formatted_args.append(f"{name}:{type_name}")
+
+    return formatted_args
+
+
+def get_procedures(full_interface_path: str) -> list[tuple[str, str, str]]:
+    module = load_module_from_path(full_interface_path)
+    interface = get_interface_from_module(module)
+
+    procedures = {
+        name: obj
+        for name, obj in interface.__dict__.items()
+        if inspect.isfunction(obj) and not name.startswith("__")
+    }
+    procs = []
+    for proc_name, proc in procedures.items():
+        proc_param_list = get_proc_param_list(proc)
+        proc_return_type = inspect.signature(proc).__str__().split("->")[1].strip(" ")
+        procs.append((proc_name, proc_return_type, proc_param_list))
+
+    return procs
