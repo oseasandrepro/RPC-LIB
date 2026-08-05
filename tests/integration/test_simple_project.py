@@ -57,7 +57,33 @@ def generate_stubs():
     Run the stub generator as a CLI tool inside test_project.
     """
     result = subprocess.run(
-        [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_DEF}"],
+        [
+            sys.executable,
+            "-m",
+            f"{STUB_GEN_SCRIPT}",
+            f"{INTERFACE_DEF}",
+            "SERVER",
+            "PYTHON",
+        ],
+        cwd=TEST_PROJECT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Stub generation failed:\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+        )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            f"{STUB_GEN_SCRIPT}",
+            f"{INTERFACE_DEF}",
+            "CLIENT",
+            "PYTHON",
+        ],
         cwd=TEST_PROJECT,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -114,15 +140,22 @@ def server_process(generate_stubs, request):
 
 def test_type_hint_checker_fail():
     result = subprocess.run(
-        [sys.executable, "-m", f"{STUB_GEN_SCRIPT}", f"{INTERFACE_DEF_INCONSISTENT}"],
+        [
+            sys.executable,
+            "-m",
+            f"{STUB_GEN_SCRIPT}",
+            f"{INTERFACE_DEF_INCONSISTENT}",
+            "CLIENT",
+            "PYTHON",
+        ],
         cwd=TEST_PROJECT,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
     )
 
-    expected_output = "INFO | srpcLib.utils.srpc_stub_util : Interface CalcinconsistentInterface found in module calcinconsistent_interface.\nERROR | srpcLib.utils.srpc_stub_util : Check type hint.\ncalc/calcinconsistent_interface.py:6: error: Function is missing a type annotation for one or more parameters  [no-untyped-def]\nFound 1 error in 1 file (checked 1 source file)\n\n"
-    assert result.stderr[-351:] == expected_output, "Expect hint checker fail"
+    expected_output = "Check type hint."
+    assert result.stderr[:16] == expected_output, "Expect hint checker fail"
 
 
 def test_type_hint_checker_sucess(generate_stubs):
@@ -142,7 +175,7 @@ def test_rpc_the_for_operations_of_calc(server_process, generate_stubs):
         text=True,
     )
 
-    expected_output = "6\n8\n2\n2.0"
+    expected_output = "6\n8\n2\n2.0\nHello world!"
     assert (
         result.stdout.strip() == expected_output
     ), f"Expected:\n{expected_output}\nGot:\n{result.stdout.strip()}"

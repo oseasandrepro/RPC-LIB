@@ -2,37 +2,44 @@ from srpcLib.utils import srpc_stub_util
 
 
 class TestSrpcStubUtils:
-    def testBuildParamTupleWithNotEmptyList(self):
-        params = ["param1", "param2", "param3"]
-        expected = "(param1, param2, param3)"
-        result = srpc_stub_util.build_param_tuple(params)
+    def test_get_service_name(self):
+        path = "tests/test_resources/calc/calc_interface.py"
+        expected = "calc"
+        service_name = srpc_stub_util.get_service_name(path)
+        assert expected == service_name
 
+    def test_get_service_interface_class_name(self):
+        path = "tests/test_resources/calc/calc_interface.py"
+        expected = "CalcInterface"
+        service_interface_class_name = srpc_stub_util.get_service_interface_class_name(
+            path
+        )
+        assert expected == service_interface_class_name
+
+    def test_remove_type_hint_from_param_list(self):
+        input = ["a:int", "b:float", "c:str"]
+        expected = ["a", "b", "c"]
+        result = srpc_stub_util.remove_type_hint_from_param_list(input)
         assert expected == result
 
-    def testBuildParamTupleWithEmptyList(self):
-        params = []
-        expected = "()"
-        result = srpc_stub_util.build_param_tuple(params)
+    def test_get_service_dir(self):
+        path = "tests/test_resources/calc/calc_interface.py"
+        expected = "tests/test_resources/calc"
+        result = srpc_stub_util.get_service_dir(path)
         assert expected == result
 
-    def testBuildParamTupleWithOneElement(self):
-        params = []
-        params.append("param1")
-        expected = "(param1,)"
-        result = srpc_stub_util.build_param_tuple(params)
-        assert expected == result
-
-    def testload_module_from_path(self):
+    def test_load_module_from_path(self):
         path = "tests/test_resources/calc/calc_interface.py"
         module = srpc_stub_util.load_module_from_path(path)
-        assert module.__name__ == "calc_interface"
+        expected = "calc_interface"
+        assert expected == module.__name__
 
     def test_check_file_type_hints_sucess(self):
         file_path = "tests/test_resources/calc/calc_interface.py"
         passed, msg = srpc_stub_util.check_file_type_hints(file_path)
-        assert passed is True
+        assert passed is True and ("" == msg[0:7])
 
     def test_check_file_type_hints_fail(self):
         file_path = "tests/test_resources/calc/calcinconsistent_interface.py."
         passed, msg = srpc_stub_util.check_file_type_hints(file_path)
-        assert passed is False
+        assert passed is False and not (msg[0:7] == "Success")
