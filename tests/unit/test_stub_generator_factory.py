@@ -1,4 +1,4 @@
-from srpcLib.stub_generator.lenguage import Lenguage
+from srpcLib.stub_generator.language import Language
 from srpcLib.stub_generator.python.client_python_stub_generator import (
     ClientPythonStubGenerator,
 )
@@ -15,7 +15,7 @@ class TestStubGeneratorFactory:
         stub_gen = StubGeneratorFactory.create_stub_generator("CLIENT", "PYTHON", path)
 
         assert StubType.CLIENT == stub_gen.get_type()
-        assert Lenguage.PYTHON == stub_gen.get_lenguage()
+        assert Language.PYTHON == stub_gen.get_language()
         assert isinstance(stub_gen, ClientPythonStubGenerator)
 
     def test_python_server_stub_gen(self):
@@ -23,5 +23,5 @@ class TestStubGeneratorFactory:
         stub_gen = StubGeneratorFactory.create_stub_generator("SERVER", "PYTHON", path)
 
         assert StubType.SERVER == stub_gen.get_type()
-        assert Lenguage.PYTHON == stub_gen.get_lenguage()
+        assert Language.PYTHON == stub_gen.get_language()
         assert isinstance(stub_gen, ServerPythonStubGenerator)

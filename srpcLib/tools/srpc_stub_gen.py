@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from ..stub_generator.lenguage import Lenguage
+from ..stub_generator.language import Language
 from ..stub_generator.stub_generator_factory import StubGeneratorFactory
 from ..stub_generator.stub_type import StubType
 from ..utils.srpc_stub_util import check_service_definition
@@ -29,7 +29,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "lenguage", type=str, help="The target lenguage", choices=[Lenguage.PYTHON.name]
+    "language", type=str, help="The target language", choices=[Language.PYTHON.name]
 )
 
 
@@ -40,6 +40,6 @@ if __name__ == "__main__":
     check_service_definition(args.path)
 
     stub_gen = StubGeneratorFactory.create_stub_generator(
-        args.type, args.lenguage, args.path
+        args.type, args.language, args.path
     )
     stub_gen.generate_stub()

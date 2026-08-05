@@ -11,5 +11,5 @@ class SrpcStubGeneratorInterface(ABC):
         pass
 
     @abstractmethod
-    def get_lenguage() -> str:
+    def get_language() -> str:
         pass

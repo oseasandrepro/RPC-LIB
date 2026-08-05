@@ -10,7 +10,7 @@ from ...utils.srpc_stub_util import (
     get_service_name,
     remove_type_hint_from_param_list,
 )
-from ..lenguage import Lenguage
+from ..language import Language
 from ..stub_type import StubType
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class _SrpcClientStub(SrpcClientStubInterface):
 
 class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
     type = StubType.CLIENT
-    lenguage = Lenguage.PYTHON
+    language = Language.PYTHON
 
     def __init__(self, interface_path: str):
         self.interface_path = interface_path
@@ -101,8 +101,8 @@ class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
     def get_type(self):
         return self.type
 
-    def get_lenguage(self):
-        return self.lenguage
+    def get_language(self):
+        return self.language
 
     def generate_stub(self, dest_path: str = None):
         service_interface_class_name = get_service_interface_class_name(
@@ -184,5 +184,5 @@ if __name__ == "__main__":
     stub_gen = ClientPythonStubGenerator(
         "/home/saesolab/software-experiments/rpc-experiment/calc/calc_interface.py"
     )
-    print(f"{stub_gen.get_type()}, {stub_gen.get_lenguage()}")
+    print(f"{stub_gen.get_type()}, {stub_gen.get_language()}")
     stub_gen.generate_stub()
