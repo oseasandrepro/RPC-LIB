@@ -24,7 +24,6 @@ import time
 import os
 
 from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
-from {LIB_NAME}.srpc_exceptions import SrpcProcUnvailException
 from {LIB_NAME}.utils.srpc_network_util import get_lan_ip_or_localhost
 import logging
 
@@ -121,13 +120,12 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     result = self.__call_procedure(request_tuple)
                     response = ("200", "", result)
                 else:
-                    raise SrpcProcUnvailException("The program cannot support the requested procedure.")
-            except SrpcProcUnvailException as e:
-                self.__logger.info(f"Procedure [{{procedure_name}}] is unavailable: {{e.message}}")
-                response = ("404", e.message, type(e).__name__)
+                    str_msg = "The service cannot support the requested procedure"
+                    self.__logger.info(f"Procedure [{{procedure_name}}] is unavailable: {{str_msg}}")
+                    response = ("404", str_msg)
             except Exception as e:
                 self.__logger.error(f"Procedure [{{procedure_name}}] call error: {{e}}")
-                response = ("500", str(e), type(e).__name__)
+                response = ("500", str(e))
             finally:
                 client_socket.sendall( self.__serializer.serialize(response))
 

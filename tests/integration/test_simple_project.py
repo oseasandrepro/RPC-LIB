@@ -188,5 +188,5 @@ def test_rpc_remote_exception_propagation(server_process, generate_stubs):
         text=True,
     )
 
-    expected_output = "ZeroDivisionError: division by zero"
-    assert result.stdout.splitlines()[-1] == expected_output
+    expected_output = "RuntimeError: division by zero"
+    assert expected_output in result.stderr.splitlines()
