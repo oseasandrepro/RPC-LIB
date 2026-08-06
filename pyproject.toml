@@ -1,6 +1,6 @@
 [project]
 name = "srpcLib"
-version = "2.2.0"
+version = "3.0.0"
 description = "SRPC is a lightweight Remote Procedure Call (RPC) library."
 authors = [{ name="Oseas Andre", email="oseasandrepro@gmail.com" }]
 dependencies = ["pytest>=8.4.1"]
@@ -11,7 +11,6 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 srpc-stub-gen = "srpcLib.tools.srpc_stub_gen:main"
-srpc-show-metrics = "srpcLib.tools.srpc_show_metrics:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
