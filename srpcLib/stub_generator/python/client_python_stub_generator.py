@@ -21,7 +21,6 @@ str_imports = textwrap.dedent(
     import socket
     import logging
     from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
-    from {LIB_NAME}.srpc_exceptions import SrpcCallException, SrpcProcUnvailException
 
     """
 ).lstrip()
@@ -64,18 +63,11 @@ class _SrpcClientStub(SrpcClientStubInterface):
             serialized_response = socket_cli.recv(1024)
             deserialized_response = self.__serializer.deserialize(serialized_response)
 
-            #(code, message, excepiton type)
-            if deserialized_response[0] == "500":
-                raise SrpcCallException(deserialized_response[1], deserialized_response[2])
-            elif deserialized_response[0] == "404":
-                raise SrpcProcUnvailException(deserialized_response[1])
+            if deserialized_response[0] == "200":
+                return deserialized_response[2]
+            elif deserialized_response[0] == "500" or deserialized_response[0] == "404":
+                raise RuntimeError(deserialized_response[1])
 
-            return deserialized_response[2]
-
-        except SrpcCallException as e:
-            raise SrpcCallException(e.message, e.code)
-        except SrpcProcUnvailException as e:
-            self.__logger.error(f"Procedure {{procedure_name}} unavailable: {{e.message}}")
         except socket.timeout:
             self.__logger.error("Timeout occurred during RPC call.")
         except socket.gaierror:
@@ -137,12 +129,7 @@ class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
                 textwrap.dedent(
                     f"""
             def {proc_name}(self{", " + ', '.join(proc_param_list) if proc_param_list else ''} ) -> {proc_return_value}:
-                try:
-                    return self.__client_stub.remote_call( '{proc_name}', ({', '.join(proc_param_list_without_type_hint) if proc_param_list else ''}) )
-                except SrpcCallException as e:
-                    exc_name = e.code #exception type
-                    exc_class = eval(exc_name)
-                    raise exc_class(e.message)
+                return self.__client_stub.remote_call( '{proc_name}', ({', '.join(proc_param_list_without_type_hint) if proc_param_list else ''}) )
 
             """
                 ).lstrip(),
