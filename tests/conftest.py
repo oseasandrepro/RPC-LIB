@@ -3,7 +3,6 @@ def pytest_collection_modifyitems(items):
     MODULE_ORDER = [
         "tests.unit.test_srpc_stub_utils",
         "tests.integration.test_simple_project",
-        "tests.unit.test_srpc_metrics",
     ]
     module_mapping = {item: item.module.__name__ for item in items}
 

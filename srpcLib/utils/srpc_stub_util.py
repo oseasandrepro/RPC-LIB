@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONNECTION_PORT = 5000
 LIB_NAME = "srpcLib"
-LOG_PATH = "./srpc_server_metrics.log"
 
 
 def get_service_name(full_interface_path: str):

@@ -5,7 +5,6 @@ from ...interface.srpc_stub_generator_interface import SrpcStubGeneratorInterfac
 from ...utils.srpc_stub_util import (
     DEFAULT_CONNECTION_PORT,
     LIB_NAME,
-    LOG_PATH,
     get_service_interface_class_name,
     get_service_name,
 )
@@ -24,8 +23,6 @@ import inspect
 import time
 import os
 
-from {LIB_NAME}.metrics.srpc_metrics_types import SrpcmetricsTypes
-from {LIB_NAME}.metrics.srpc_metric import SrpcMetric
 from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
 from {LIB_NAME}.srpc_exceptions import SrpcProcUnvailException
 from {LIB_NAME}.utils.srpc_network_util import get_lan_ip_or_localhost
@@ -76,7 +73,6 @@ from {service_name}.{service_name}_interface import {service_interface_class_nam
 
 class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
     def __init__(self):
-        self.__mestrics = SrpcMetric("{LOG_PATH}")
 
         self.__host = get_lan_ip_or_localhost()
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
@@ -88,7 +84,6 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__serializer = SrpcSerializer()
         self.__lib_procedures = {service_class_name}()
         self.__check_implements_interface(self.__lib_procedures, {service_interface_class_name})
-        self.__set_metrics()
 
         self.__logger = logging.getLogger(__name__)
         self.__logger.setLevel(logging.INFO)
@@ -97,12 +92,6 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
 
-
-    def __set_metrics(self):
-        for procedure_name in self.__lib_procedures_name:
-            self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.COUNTER_SUCCESS)
-            self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.COUNTER_FAIL)
-            self.__mestrics.add_metric(procedure_name, SrpcmetricsTypes.TIME)
 
     def __get_lib_procedures_name(self):
         return [name for name, member in inspect.getmembers({service_interface_class_name}, predicate=inspect.isfunction)]
@@ -129,12 +118,8 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
                 if isinstance(request_tuple, list):
                     self.__logger.info(f"Request: {{request_tuple}} from: {{client_addr[0]}}")
-                    start_time = time.time()  # Start time measurement
                     result = self.__call_procedure(request_tuple)
-                    end_time = time.time()  # End time measurement
                     response = ("200", "", result)
-                    self.__mestrics.inc_counter_success(f"{{procedure_name}}")
-                    self.__mestrics.record_time(f"{{procedure_name}}", end_time - start_time)
                 else:
                     raise SrpcProcUnvailException("The program cannot support the requested procedure.")
             except SrpcProcUnvailException as e:
@@ -143,7 +128,6 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             except Exception as e:
                 self.__logger.error(f"Procedure [{{procedure_name}}] call error: {{e}}")
                 response = ("500", str(e), type(e).__name__)
-                self.__mestrics.inc_counter_fail(f"{{procedure_name}}")
             finally:
                 client_socket.sendall( self.__serializer.serialize(response))
 

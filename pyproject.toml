@@ -11,7 +11,6 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 srpc-stub-gen = "srpcLib.tools.srpc_stub_gen:main"
-srpc-show-metrics = "srpcLib.tools.srpc_show_metrics:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

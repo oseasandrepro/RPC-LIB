@@ -21,8 +21,6 @@ SERVER_SCRIPT = "server.py"
 CLIENT_SCRIPT = "client.py"
 CLIENT_SCRIPT_DIVISION_BY_ZERO = "run_rpc_client_divizion_by_zero.py"
 
-LOG_FILE = "srpc_server_metrics.log"
-
 # Network
 SERVER_HOST = get_lan_ip_or_localhost()
 SERVER_PORT = 5000
@@ -129,7 +127,7 @@ def server_process(generate_stubs, request):
             proc.kill()
 
         # Remove stubs and log file
-        for f in [SERVER_STUB_SCRIPT, CLIENT_STUB_SCRIPT, LOG_FILE]:
+        for f in [SERVER_STUB_SCRIPT, CLIENT_STUB_SCRIPT]:
             file_path = generate_stubs / f
             if file_path.exists():
                 file_path.unlink()
