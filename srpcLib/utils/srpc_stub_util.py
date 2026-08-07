@@ -96,7 +96,7 @@ def check_file_type_hints(file_path: str) -> tuple[bool, str]:
 
     output = result.stdout
     if output[0:7] == "Success":
-        return True, ""
+        return True, "Passed"
     else:
         return False, output
 
