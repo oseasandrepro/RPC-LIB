@@ -173,7 +173,7 @@ def test_rpc_the_for_operations_of_calc(server_process, generate_stubs):
         text=True,
     )
 
-    expected_output = "6\n8\n2\n2.0\nHello world!"
+    expected_output = "6\n8\n2\n2.0\nHello world!\n6.25"
     assert (
         result.stdout.strip() == expected_output
     ), f"Expected:\n{expected_output}\nGot:\n{result.stdout.strip()}"

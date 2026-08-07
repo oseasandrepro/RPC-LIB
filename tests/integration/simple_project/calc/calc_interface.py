@@ -21,3 +21,7 @@ class CalcInterface(ABC):
     @abstractmethod
     def hello_world(self) -> str:
         pass
+
+    @abstractmethod
+    def square(self, x: float) -> float:
+        pass
