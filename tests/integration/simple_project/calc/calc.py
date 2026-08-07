@@ -16,3 +16,6 @@ class Calc(CalcInterface):
 
     def hello_world(self):
         return "Hello world!"
+
+    def square(self, x: float) -> float:
+        return x * x
