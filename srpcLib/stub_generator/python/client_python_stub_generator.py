@@ -129,7 +129,7 @@ class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
                 textwrap.dedent(
                     f"""
             def {proc_name}(self{", " + ', '.join(proc_param_list) if proc_param_list else ''} ) -> {proc_return_value}:
-                return self.__client_stub.remote_call( '{proc_name}', ({', '.join(proc_param_list_without_type_hint) if proc_param_list else ''}) )
+                return self.__client_stub.remote_call( '{proc_name}', ({proc_param_list_without_type_hint[0] + ',' if len(proc_param_list_without_type_hint) == 1 else ', '.join(proc_param_list_without_type_hint) if proc_param_list_without_type_hint else ''}) )
 
             """
                 ).lstrip(),
