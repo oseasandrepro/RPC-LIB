@@ -35,11 +35,29 @@ class TestSrpcStubUtils:
         assert expected == module.__name__
 
     def test_check_file_type_hints_sucess(self):
+        """Chek sucess in type hint enforcement"""
+
         file_path = "tests/test_resources/calc/calc_interface.py"
         passed, msg = srpc_stub_util.check_file_type_hints(file_path)
-        assert passed is True and ("" == msg[0:7])
+        assert passed is True and "Passed" == msg
 
     def test_check_file_type_hints_fail(self):
-        file_path = "tests/test_resources/calc/calcinconsistent_interface.py."
+        """Chek fail in type hint enforcement"""
+
+        file_path = "tests/test_resources/calc/calcinconsistentgen_interface.py."
         passed, msg = srpc_stub_util.check_file_type_hints(file_path)
-        assert passed is False and not (msg[0:7] == "Success")
+        assert passed is False and not (msg == "Passed")
+
+    def test_check_file_type_hints_generic_fail(self):
+        """Chek fail in type hint of generics(lists, dictionaries,...)"""
+
+        file_path = "tests/test_resources/calc/calcinconsistentegen_interface.py."
+        passed, msg = srpc_stub_util.check_file_type_hints(file_path)
+        assert passed is False and not (msg == "Passed")
+
+    def test_check_file_type_hints_generic_sucess(self):
+        """Chek sucess in type hint of generics(lists, dictionaries,...)"""
+
+        file_path = "tests/test_resources/calc/calcconsistentgen_interface.py"
+        passed, msg = srpc_stub_util.check_file_type_hints(file_path)
+        assert passed is True and msg == "Passed"
