@@ -1,6 +1,6 @@
 [project]
 name = "srpcLib"
-version = "3.0.0"
+version = "3.1.1"
 description = "SRPC is a lightweight Remote Procedure Call (RPC) library."
 authors = [{ name="Oseas Andre", email="oseasandrepro@gmail.com" }]
 dependencies = ["pytest>=8.4.1"]
