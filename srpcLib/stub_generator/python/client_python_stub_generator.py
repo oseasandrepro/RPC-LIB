@@ -20,8 +20,6 @@ str_imports = textwrap.dedent(
     from abc import ABC, abstractmethod
     import socket
     import logging
-    from typing import TypeVarTuple
-    Ts = TypeVarTuple("Ts")
 
     from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
     import {LIB_NAME}.utils.srpc_network_util as srpcnetwork

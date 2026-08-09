@@ -22,8 +22,6 @@ import threading
 import inspect
 import os
 import msgpack
-from typing import TypeVarTuple
-Ts = TypeVarTuple("Ts")
 
 from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
 import {LIB_NAME}.utils.srpc_network_util as srpcnetwork
