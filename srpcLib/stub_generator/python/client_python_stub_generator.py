@@ -71,12 +71,12 @@ class _SrpcClientStub(SrpcClientStubInterface):
 
             deserialized_response_payload = self.__serializer.deserialize(response.payload)
 
-            if response.type == 0:
+            if response.code == 0:
                 return deserialized_response_payload
-            elif response.type == 1:
+            elif response.code == 1:
                 str_msg: str = deserialized_response_payload
                 raise RuntimeError(str_msg)
-            elif response.type == 2:
+            elif response.code == 2:
                 str_msg: str = deserialized_response_payload
                 raise RuntimeError(str_msg)
 

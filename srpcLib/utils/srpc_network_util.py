@@ -44,7 +44,7 @@ class Request:
 # ############# RESPONSE ###############
 # header
 #   protocol_version: 2 bytes
-#   type: 2 bytes
+#   code: 2 bytes
 #   payload_size: 4 bytes
 # payload
 #   payload: n bytes
@@ -54,14 +54,14 @@ HEADER = struct.Struct("!HHI")
 @dataclass
 class Response:
     protocol_version: int
-    type: int
+    code: int
     payload_size: int
     payload: bytes
 
     def serialize(self) -> bytes:
         header = HEADER.pack(
             self.protocol_version,
-            self.type,
+            self.code,
             len(self.payload),
         )
 

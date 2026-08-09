@@ -139,7 +139,7 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                 result = self.__call_procedure(request.proc_id, proc_parameters_list)
 
                 # build response, payload=(msg, returned-value)
-                # 0 in response type mean sucess
+                # 0 in response code mean sucess
                 response_payload = result
                 response_payload_bytes = self.__serializer.serialize(response_payload)
                 response = srpcnetwork.Response(0, 0, len(response_payload_bytes), response_payload_bytes)
