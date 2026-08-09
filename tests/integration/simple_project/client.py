@@ -1,6 +1,6 @@
 from srpc_calc_client_stub import SrpcCalcClientStub
 
-from srpcLib.utils.srpc_network_util import get_lan_ip_or_localhost
+from srpcLib.utils.srpc_network import get_lan_ip_or_localhost
 
 SERVER_HOST = get_lan_ip_or_localhost()
 calcStub = SrpcCalcClientStub(SERVER_HOST, 5000)

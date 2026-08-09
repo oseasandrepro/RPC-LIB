@@ -2,7 +2,7 @@ import logging
 import textwrap
 
 from ...interface.srpc_stub_generator_interface import SrpcStubGeneratorInterface
-from ...utils.srpc_stub_util import (
+from ...utils.srpc_stub import (
     DEFAULT_CONNECTION_PORT,
     LIB_NAME,
     get_procedures,
@@ -22,7 +22,7 @@ str_imports = textwrap.dedent(
     import logging
 
     from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
-    import {LIB_NAME}.utils.srpc_network_util as srpcnetwork
+    import {LIB_NAME}.utils.srpc_network as srpcnetwork
     """
 ).lstrip()
 
