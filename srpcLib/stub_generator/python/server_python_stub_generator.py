@@ -21,7 +21,6 @@ import socket
 import threading
 import inspect
 import os
-import msgpack
 
 from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
 import {LIB_NAME}.utils.srpc_network_util as srpcnetwork
@@ -134,7 +133,7 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     raise ValueError("Srpc: empty payload request")
 
                 # deserialize the list of parameters
-                proc_parameters_list = msgpack.unpackb(request.payload, raw=False)
+                proc_parameters_list = self.__serializer.deserialize(request.payload)
 
                 #Call procedure
                 result = self.__call_procedure(request.proc_id, proc_parameters_list)
@@ -142,18 +141,18 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                 # build response, payload=(msg, returned-value)
                 # 0 in response type mean sucess
                 response_payload = result
-                response_payload_bytes = msgpack.packb(response_payload)
+                response_payload_bytes = self.__serializer.serialize(response_payload)
                 response = srpcnetwork.Response(0, 0, len(response_payload_bytes), response_payload_bytes)
 
             except KeyError as e:
                 response_payload = "The service do not support the requested procedure"
-                response_payload_bytes = msgpack.packb(response_payload)
+                response_payload_bytes = self.__serializer.serialize(response_payload)
                 response = srpcnetwork.Response(0, 1, len(response_payload_bytes), response_payload_bytes)
                 self.__logger.info(f"Procedure not suported: {{e.message}}")
             except Exception as e:
                 self.__logger.error(f"Procedure [{{procedure_name}}] call error: {{e}}")
                 response_payload = str(e)
-                response_payload_bytes = msgpack.packb(response_payload)
+                response_payload_bytes = self.__serializer.serialize(response_payload)
                 response = srpcnetwork.Response(0, 2, len(response_payload_bytes), response_payload_bytes)
             finally:
                 client_socket.sendall( response.serialize())
