@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from srpcLib.utils.srpc_network_util import get_lan_ip_or_localhost
+from srpcLib.utils.srpc_network import get_lan_ip_or_localhost
 
 # Paths
 ROOT_DIR = Path(__file__).resolve().parents[2]  # rpc-lib/

@@ -2,7 +2,7 @@ import logging
 import textwrap
 
 from ...interface.srpc_stub_generator_interface import SrpcStubGeneratorInterface
-from ...utils.srpc_stub_util import (
+from ...utils.srpc_stub import (
     DEFAULT_CONNECTION_PORT,
     LIB_NAME,
     get_procedures,
@@ -20,8 +20,9 @@ str_imports = textwrap.dedent(
     from abc import ABC, abstractmethod
     import socket
     import logging
-    from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
 
+    from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
+    import {LIB_NAME}.utils.srpc_network as srpcnetwork
     """
 ).lstrip()
 
@@ -51,22 +52,33 @@ class _SrpcClientStub(SrpcClientStubInterface):
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
 
-    def remote_call(self, procedure_name, parameters: tuple):
+    def remote_call(self, proc_id: int, params_tuple: tuple):
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socket_cli.connect((self.__server_host, self.__connection_port))
 
-            request = (procedure_name, *parameters)
-            serialized_request = self.__serializer.serialize(request)
-            socket_cli.sendall(serialized_request)
+            payload_bytes = self.__serializer.serialize(params_tuple)
+            request = srpcnetwork.Request(srpcnetwork.PROTOCOL_VERSION, proc_id,
+                                          len(payload_bytes), payload_bytes)
+            #send request
+            socket_cli.sendall(request.serialize())
 
-            serialized_response = socket_cli.recv(1024)
-            deserialized_response = self.__serializer.deserialize(serialized_response)
+            #Recive response
+            response_header_bytes = srpcnetwork.recv_n(socket_cli, srpcnetwork.HEADER_SIZE)
+            response = srpcnetwork.Response.deserialize_header(response_header_bytes)
 
-            if deserialized_response[0] == "200":
-                return deserialized_response[2]
-            elif deserialized_response[0] == "500" or deserialized_response[0] == "404":
-                raise RuntimeError(deserialized_response[1])
+            response.payload = srpcnetwork.recv_n(socket_cli, response.payload_size)
+
+            deserialized_response_payload = self.__serializer.deserialize(response.payload)
+
+            if response.code == 0:
+                return deserialized_response_payload
+            elif response.code == 1:
+                str_msg: str = deserialized_response_payload
+                raise RuntimeError(str_msg)
+            elif response.code == 2:
+                str_msg: str = deserialized_response_payload
+                raise RuntimeError(str_msg)
 
         except socket.timeout:
             self.__logger.error("Timeout occurred during RPC call.")
@@ -75,9 +87,9 @@ class _SrpcClientStub(SrpcClientStubInterface):
         except ConnectionRefusedError:
             self.__logger.error(f"Connection refused. Is the server running and reachable?")
         except socket.error as e:
-            self.__logger.error(f"Socket error: {{e}}")
+            self.__logger.error(f"Socket error: {e}")
         except OSError as e:
-            self.__logger.error(f"OS error during RPC call: {{e}}")
+            self.__logger.error(f"OS error during RPC call: {e}")
 
 """
 ).lstrip()
@@ -116,7 +128,7 @@ class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
         str_procs = ""
 
         procs_list = get_procedures(self.interface_path)
-
+        index = 0
         for proc in procs_list:
             proc_name = proc[0]
             proc_return_value = proc[1]
@@ -129,13 +141,14 @@ class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
                 textwrap.dedent(
                     f"""
             def {proc_name}(self{", " + ', '.join(proc_param_list) if proc_param_list else ''} ) -> {proc_return_value}:
-                return self.__client_stub.remote_call( '{proc_name}', ({proc_param_list_without_type_hint[0] + ',' if len(proc_param_list_without_type_hint) == 1 else ', '.join(proc_param_list_without_type_hint) if proc_param_list_without_type_hint else ''}) )
+                return self.__client_stub.remote_call( {index}, ({proc_param_list_without_type_hint[0] + ',' if len(proc_param_list_without_type_hint) == 1 else ', '.join(proc_param_list_without_type_hint) if proc_param_list_without_type_hint else ''}) )
 
             """
                 ).lstrip(),
                 "    ",
             )
             str_procs += str_proc
+            index += 1
 
         str_service_class += str_procs
 

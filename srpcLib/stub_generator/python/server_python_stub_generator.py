@@ -2,7 +2,7 @@ import logging
 import textwrap
 
 from ...interface.srpc_stub_generator_interface import SrpcStubGeneratorInterface
-from ...utils.srpc_stub_util import (
+from ...utils.srpc_stub import (
     DEFAULT_CONNECTION_PORT,
     LIB_NAME,
     get_service_interface_class_name,
@@ -20,11 +20,10 @@ from abc import ABC, abstractmethod
 import socket
 import threading
 import inspect
-import time
 import os
 
 from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
-from {LIB_NAME}.utils.srpc_network_util import get_lan_ip_or_localhost
+import {LIB_NAME}.utils.srpc_network as srpcnetwork
 import logging
 
 """
@@ -73,16 +72,15 @@ from {service_name}.{service_name}_interface import {service_interface_class_nam
 class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
     def __init__(self):
 
-        self.__host = get_lan_ip_or_localhost()
+        self.__host = srpcnetwork.get_lan_ip_or_localhost()
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
 
-        self.__lib_procedures_name = self.__get_lib_procedures_name()
         self.__executor = ThreadPoolExecutor(max_workers=10)
         self.__threads = []
         self.__stop_event = threading.Event()
         self.__serializer = SrpcSerializer()
-        self.__lib_procedures = {service_class_name}()
-        self.__check_implements_interface(self.__lib_procedures, {service_interface_class_name})
+        self.__lib_procs = {service_class_name}()
+        self.__check_implements_interface(self.__lib_procs, {service_interface_class_name})
 
         self.__logger = logging.getLogger(__name__)
         self.__logger.setLevel(logging.INFO)
@@ -91,9 +89,18 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
 
+        self.__proc_id_dic : dict[int, str] = self.__get_proc_id_dic()
 
-    def __get_lib_procedures_name(self):
-        return [name for name, member in inspect.getmembers({service_interface_class_name}, predicate=inspect.isfunction)]
+    def __get_proc_id_dic(self):
+        index:int = 0
+        procs : dict[int,str] = {{}}
+        procedures = {{ name: obj for name, obj in {service_interface_class_name}.__dict__.items()
+            if inspect.isfunction(obj) and not name.startswith("__") }}
+        for proc_name in procedures:
+            procs[index] = proc_name
+            index = index+1
+
+        return procs
 
     def __check_implements_interface(self, obj, interface):
         if not isinstance(obj, interface):
@@ -101,33 +108,55 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             self.__logger.error("Mission aborted.")
             os._exit(1)
 
-    def __call_procedure(self, t: tuple):
+    def __call_procedure(self, proc_id: int, args: list):
         try:
-            method = getattr(self.__lib_procedures, t[0])
-            return method(*t[1:])
+            procedure = getattr(self.__lib_procs, self.__proc_id_dic[proc_id])
+            return procedure(*args)
         except AttributeError:
             return None
 
     def __handle_request(self, client_socket, client_addr):
         with client_socket:
             try:
-                msg = client_socket.recv(1024)
-                request_tuple = self.__serializer.deserialize(msg)
-                procedure_name = request_tuple[0]
+                #recive header
+                header_bytes = srpcnetwork.recv_n(client_socket, srpcnetwork.HEADER_SIZE)
+                request = srpcnetwork.Request.deserialize_header(header_bytes)
 
-                if isinstance(request_tuple, list):
-                    self.__logger.info(f"Request: {{request_tuple}} from: {{client_addr[0]}}")
-                    result = self.__call_procedure(request_tuple)
-                    response = ("200", "", result)
-                else:
-                    str_msg = "The service cannot support the requested procedure"
-                    self.__logger.info(f"Procedure [{{procedure_name}}] is unavailable: {{str_msg}}")
-                    response = ("404", str_msg)
+                #check protocol version
+
+                procedure_name = self.__proc_id_dic[request.proc_id]
+
+                self.__logger.info(f"Requested procedure {{procedure_name}} from: {{client_addr[0]}}")
+
+                request.payload = srpcnetwork.recv_n(client_socket, request.payload_size)
+                if not request.payload:
+                    raise ValueError("Srpc: empty payload request")
+
+                # deserialize the list of parameters
+                proc_parameters_list = self.__serializer.deserialize(request.payload)
+
+                #Call procedure
+                result = self.__call_procedure(request.proc_id, proc_parameters_list)
+
+                # build response, payload=(msg, returned-value)
+                # 0 in response code mean sucess
+                response_payload = result
+                response_payload_bytes = self.__serializer.serialize(response_payload)
+                response = srpcnetwork.Response(0, 0, len(response_payload_bytes), response_payload_bytes)
+
+            except KeyError as e:
+                response_payload = "The service do not support the requested procedure"
+                response_payload_bytes = self.__serializer.serialize(response_payload)
+                response = srpcnetwork.Response(0, 1, len(response_payload_bytes), response_payload_bytes)
+                self.__logger.info(f"Procedure not suported: {{e.message}}")
             except Exception as e:
                 self.__logger.error(f"Procedure [{{procedure_name}}] call error: {{e}}")
-                response = ("500", str(e))
+                response_payload = str(e)
+                response_payload_bytes = self.__serializer.serialize(response_payload)
+                response = srpcnetwork.Response(0, 2, len(response_payload_bytes), response_payload_bytes)
             finally:
-                client_socket.sendall( self.__serializer.serialize(response))
+                client_socket.sendall( response.serialize())
+                client_socket.close()
 
     def __listner(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listner_socket:
