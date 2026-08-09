@@ -4,7 +4,7 @@ import logging
 from ..stub_generator.language import Language
 from ..stub_generator.stub_generator_factory import StubGeneratorFactory
 from ..stub_generator.stub_type import StubType
-from ..utils.srpc_stub_util import check_service_definition
+from ..utils.srpc_stub import check_service_definition
 
 
 def configure_logging():
