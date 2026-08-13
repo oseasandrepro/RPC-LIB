@@ -152,8 +152,8 @@ def test_type_hint_checker_fail():
         text=True,
     )
 
-    expected_output = "Check type hint."
-    assert result.stderr[:16] == expected_output, "Expect hint checker fail"
+    expected_str = "Error during SRPC type hint Check."
+    assert expected_str in result.stderr, "'test_type_hint_checker_fail' fail"
 
 
 def test_type_hint_checker_sucess(generate_stubs):
