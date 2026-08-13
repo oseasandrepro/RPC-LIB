@@ -13,11 +13,9 @@ STUB_GEN_SCRIPT = "srpcLib.tools.srpc_stub_gen"
 SERVER_STUB_SCRIPT = "srpc_calc_server_stub.py"
 CLIENT_STUB_SCRIPT = "srpc_calc_client_stub.py"
 INTERFACE_DEF = TEST_PROJECT / "calc/calc_interface.py"
-INTERFACE_DEF_INCONSISTENT = TEST_PROJECT / "calc/calcinconsistent_interface.py"
 
 SERVER_SCRIPT = "server.py"
 CLIENT_SCRIPT = "client.py"
-CLIENT_SCRIPT_DIVISION_BY_ZERO = "run_rpc_client_divizion_by_zero.py"
 
 # Network
 SERVER_HOST = "127.0.0.1"
