@@ -17,7 +17,9 @@ str_imports = textwrap.dedent(
     f"""
 from concurrent.futures import ThreadPoolExecutor
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import socket
+import ssl
 import threading
 import inspect
 import os
@@ -25,6 +27,23 @@ import os
 from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
 import {LIB_NAME}.utils.srpc_network as srpcnetwork
 import logging
+
+"""
+).lstrip()
+
+str_server_TLSConfig = textwrap.dedent(
+    """
+# ############# TLS config class ###############
+# certfile -> Path of certfile, usend in server side
+# keyfile -> Path of keyfile, used in server side
+# cafile -> Path of Certificate Authority (used in client side)
+@dataclass
+class  SrpcTLSConfig:
+    certfile: str | None = None
+    keyfile: str | None = None
+    cafile: str | None = None
+
+    minimum_tls_version: ssl.TLSVersion = ssl.TLSVersion.TLSv1_2
 
 """
 ).lstrip()
@@ -70,7 +89,7 @@ from {service_name}.{service_name} import {service_class_name}
 from {service_name}.{service_name}_interface import {service_interface_class_name}
 
 class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
-    def __init__(self):
+    def __init__(self, tls_config: SrpcTLSConfig = None):
 
         self.__host = srpcnetwork.get_lan_ip_or_localhost()
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
@@ -90,6 +109,7 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
         self.__logger.addHandler(self.__console_handler)
 
         self.__proc_id_dic : dict[int, str] = self.__get_proc_id_dic()
+        self.__tls_config = tls_config
 
     def __get_proc_id_dic(self):
         index:int = 0
@@ -169,9 +189,19 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             while not self.__stop_event.is_set():
                 try:
                     client_socket, client_addr = listner_socket.accept()
-                    self.__executor.submit(self.__handle_request, client_socket, client_addr)
+                    if self.__tls_config == None:
+                        self.__executor.submit(self.__handle_request, client_socket, client_addr)
+                    else:
+                        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                        context.minimum_version = self.__tls_config.minimum_tls_version
+                        context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
+                        secure_client_socket = context.wrap_socket(client_socket, server_side=True)
+                        self.__executor.submit(self.__handle_request, secure_client_socket, client_addr)
+
                 except socket.timeout:
                     continue
+                except (ssl.SSLError, ssl.CertificateError) as e:
+                   self.__logger.warning(f"Captured Requests SSL Error: {{e}}")
                 except Exception as e:
                     self.__logger.error(f"An error occurred while listening for users requests in port [{{port}}]: {{e}}")
                     os._exit(1)
@@ -203,7 +233,12 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
         """
         ).lstrip()
 
-        stub_code = str_imports + str_server_stub_interface + str_service_class
+        stub_code = (
+            str_imports
+            + str_server_TLSConfig
+            + str_server_stub_interface
+            + str_service_class
+        )
 
         # server_stub_file_name = f"{dest_path + "/" if dest_path else ""}srpc_{service_name}_server_stub.py"
         server_stub_file_name = (
