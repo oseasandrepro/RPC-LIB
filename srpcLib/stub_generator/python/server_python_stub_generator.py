@@ -89,9 +89,13 @@ from {service_name}.{service_name} import {service_class_name}
 from {service_name}.{service_name}_interface import {service_interface_class_name}
 
 class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
-    def __init__(self, tls_config: SrpcTLSConfig = None):
+    def __init__(self, tls_config: SrpcTLSConfig = None, host:str=None):
 
-        self.__host = srpcnetwork.get_lan_ip_or_localhost()
+        if host == None:
+            self.__host = srpcnetwork.get_lan_ip_or_localhost()
+        else:
+            self.__host = host
+
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
 
         self.__executor = ThreadPoolExecutor(max_workers=10)
