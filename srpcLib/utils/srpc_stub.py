@@ -98,6 +98,7 @@ def check_file_type_hints(file_path: str) -> tuple[bool, str]:
     if output[0:7] == "Success":
         return True, "Passed"
     else:
+        output = result.stderr
         return False, output
 
 
@@ -108,7 +109,7 @@ def check_service_definition(full_interface_path: str):
     try:
         passed, msg = check_file_type_hints(full_interface_path)
         if not passed:
-            raise ValueError(f"Check type hint.\n{msg}")
+            raise ValueError(f"Error during SRPC type hint Check.\n{msg}")
     except ValueError as e:
         logger.error(str(e))
         exit(1)
