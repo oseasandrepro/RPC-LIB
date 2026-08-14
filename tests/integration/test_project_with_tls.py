@@ -6,23 +6,19 @@ from pathlib import Path
 
 import pytest
 
-from srpcLib.utils.srpc_network import get_lan_ip_or_localhost
-
 # Paths
 ROOT_DIR = Path(__file__).resolve().parents[2]  # rpc-lib/
-TEST_PROJECT = ROOT_DIR / "tests/integration/simple_project"
+TEST_PROJECT = ROOT_DIR / "tests/integration/project_with_tls"
 STUB_GEN_SCRIPT = "srpcLib.tools.srpc_stub_gen"
 SERVER_STUB_SCRIPT = "srpc_calc_server_stub.py"
 CLIENT_STUB_SCRIPT = "srpc_calc_client_stub.py"
 INTERFACE_DEF = TEST_PROJECT / "calc/calc_interface.py"
-INTERFACE_DEF_INCONSISTENT = TEST_PROJECT / "calc/calcinconsistent_interface.py"
 
 SERVER_SCRIPT = "server.py"
 CLIENT_SCRIPT = "client.py"
-CLIENT_SCRIPT_DIVISION_BY_ZERO = "run_rpc_client_divizion_by_zero.py"
 
 # Network
-SERVER_HOST = get_lan_ip_or_localhost()
+SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 5000
 
 
@@ -136,35 +132,7 @@ def server_process(generate_stubs, request):
     yield proc
 
 
-def test_type_hint_checker_fail():
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            f"{STUB_GEN_SCRIPT}",
-            f"{INTERFACE_DEF_INCONSISTENT}",
-            "CLIENT",
-            "PYTHON",
-        ],
-        cwd=TEST_PROJECT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-    expected_str = "Error during SRPC type hint Check."
-    assert expected_str in result.stderr, "'test_type_hint_checker_fail' fail"
-
-
-def test_type_hint_checker_sucess(generate_stubs):
-    # Assert generated scripts exist
-    server_file = TEST_PROJECT / SERVER_STUB_SCRIPT
-    client_file = TEST_PROJECT / CLIENT_STUB_SCRIPT
-    assert server_file.exists(), f"Missing server stub: {server_file}"
-    assert client_file.exists(), f"Missing client stub: {client_file}"
-
-
-def test_rpc_the_for_operations_of_calc(server_process, generate_stubs):
+def test_rpc_call_add_and_sub(server_process, generate_stubs):
     result = subprocess.run(
         [sys.executable, CLIENT_SCRIPT],
         cwd=generate_stubs,
@@ -173,20 +141,7 @@ def test_rpc_the_for_operations_of_calc(server_process, generate_stubs):
         text=True,
     )
 
-    expected_output = "6\n8\n2\n2.0\nHello world!\n6.25"
+    expected_output = "6\n2"
     assert (
         result.stdout.strip() == expected_output
     ), f"Expected:\n{expected_output}\nGot:\n{result.stdout.strip()}"
-
-
-def test_rpc_remote_exception_propagation(server_process, generate_stubs):
-    result = subprocess.run(
-        [sys.executable, CLIENT_SCRIPT_DIVISION_BY_ZERO],
-        cwd=generate_stubs,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-
-    expected_output = "RuntimeError: division by zero"
-    assert expected_output in result.stderr.splitlines()

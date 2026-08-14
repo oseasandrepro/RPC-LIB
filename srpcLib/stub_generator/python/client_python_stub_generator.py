@@ -18,12 +18,32 @@ logger = logging.getLogger(__name__)
 str_imports = textwrap.dedent(
     f"""
     from abc import ABC, abstractmethod
+    from dataclasses import dataclass
     import socket
+    import ssl
     import logging
 
     from {LIB_NAME}.utils.srpc_serializer import SrpcSerializer
     import {LIB_NAME}.utils.srpc_network as srpcnetwork
+
     """
+).lstrip()
+
+str_server_TLSConfig = textwrap.dedent(
+    """
+# ############# TLS config class ###############
+# certfile -> Path of certfile, usend in server side
+# keyfile -> Path of keyfile, used in server side
+# cafile -> Path of Certificate Authority (used in client side)
+@dataclass
+class  SrpcTLSConfig:
+    certfile: str | None = None
+    keyfile: str | None = None
+    cafile: str | None = None
+
+    minimum_tls_version: ssl.TLSVersion = ssl.TLSVersion.TLSv1_2
+
+"""
 ).lstrip()
 
 str_client_stub_interface = textwrap.dedent(
@@ -40,7 +60,7 @@ str_client_stub_class = textwrap.dedent(
     """
 class _SrpcClientStub(SrpcClientStubInterface):
 
-    def __init__(self, server_host, port):
+    def __init__(self, server_host, port, tls_config: SrpcTLSConfig = None):
         self.__serializer = SrpcSerializer()
         self.__server_host = server_host
         self.__connection_port = port
@@ -51,10 +71,19 @@ class _SrpcClientStub(SrpcClientStubInterface):
         self.__formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
         self.__console_handler.setFormatter(self.__formatter)
         self.__logger.addHandler(self.__console_handler)
+        self.__tls_config = tls_config
 
     def remote_call(self, proc_id: int, params_tuple: tuple):
         try:
             socket_cli = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            if not self.__tls_config == None:
+                #Secure Socket
+                context = ssl.create_default_context()
+                context.minimum_version = self.__tls_config.minimum_tls_version
+                context.load_verify_locations(self.__tls_config.cafile)
+                socket_cli = context.wrap_socket(socket_cli, server_hostname=self.__server_host)
+
             socket_cli.connect((self.__server_host, self.__connection_port))
 
             payload_bytes = self.__serializer.serialize(params_tuple)
@@ -119,8 +148,8 @@ class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
         from {service_name}.{service_name}_interface import {service_interface_class_name}
 
         class Srpc{service_name.capitalize()}ClientStub({service_interface_class_name}):
-            def __init__(self, server_host='127.0.0.1', port = {DEFAULT_CONNECTION_PORT}):
-                self.__client_stub = _SrpcClientStub(server_host, port)
+            def __init__(self, server_host='127.0.0.1', port = {DEFAULT_CONNECTION_PORT}, tls_config: SrpcTLSConfig = None):
+                self.__client_stub = _SrpcClientStub(server_host, port, tls_config)
 
         """
         ).lstrip()
@@ -154,6 +183,7 @@ class ClientPythonStubGenerator(SrpcStubGeneratorInterface):
 
         stub_code = (
             str_imports
+            + str_server_TLSConfig
             + str_client_stub_interface
             + str_client_stub_class
             + str_service_class
