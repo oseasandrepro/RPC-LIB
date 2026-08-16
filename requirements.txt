@@ -3,6 +3,5 @@ pre-commit==4.3.0
 black==23.9.1
 flake8==7.0.0
 isort==5.13.2
-rich==13.7.0
 msgpack==1.2.1
 mypy==2.3.0
