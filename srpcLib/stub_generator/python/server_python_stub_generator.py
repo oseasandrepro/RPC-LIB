@@ -216,7 +216,7 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             t = threading.Thread(None,target=self.__listner,name=f"SRPC Thread-Listener")
             self.__threads.append(t)
             t.start()
-            self.__logger.info(f"Procedurs call on [tcp-{{self.__host}}:{{self.__CONNECTION_PORT}}].")
+            self.__logger.info(f"Procedures calls on [tcp-{{self.__host}}:{{self.__CONNECTION_PORT}}].")
             self.__logger.info(f"press Ctrl+C to stop.")
             stop_event.wait()
         except KeyboardInterrupt:
