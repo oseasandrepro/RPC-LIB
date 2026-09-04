@@ -89,7 +89,7 @@ from {service_name}.{service_name} import {service_class_name}
 from {service_name}.{service_name}_interface import {service_interface_class_name}
 
 class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
-    def __init__(self, tls_config: SrpcTLSConfig = None, host:str=None):
+    def __init__(self, tls_config: SrpcTLSConfig = None, host:str=None, num_threads = 8):
 
         if host == None:
             self.__host = srpcnetwork.get_lan_ip_or_localhost()
@@ -98,8 +98,10 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
 
-        self.__executor = ThreadPoolExecutor(max_workers=10)
-        self.__threads = []
+        self.__handler_threads_pool = ThreadPoolExecutor(num_threads)
+
+        self.__listner_thread = None
+        self.__handler_threads_pool = ThreadPoolExecutor(max_workers=10)
         self.__stop_event = threading.Event()
         self.__serializer = SrpcSerializer()
         self.__lib_procs = {service_class_name}()
@@ -194,13 +196,13 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                 try:
                     client_socket, client_addr = listner_socket.accept()
                     if self.__tls_config == None:
-                        self.__executor.submit(self.__handle_request, client_socket, client_addr)
+                        self.__handler_threads_pool.submit(self.__handle_request, client_socket, client_addr)
                     else:
                         context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
                         context.minimum_version = self.__tls_config.minimum_tls_version
                         context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
                         secure_client_socket = context.wrap_socket(client_socket, server_side=True)
-                        self.__executor.submit(self.__handle_request, secure_client_socket, client_addr)
+                        self.__handler_threads_pool.submit(self.__handle_request, secure_client_socket, client_addr)
 
                 except socket.timeout:
                     continue
@@ -211,28 +213,30 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     os._exit(1)
 
     def start(self):
-        stop_event = threading.Event()
         try:
-            t = threading.Thread(None,target=self.__listner,name=f"SRPC Thread-Listener")
-            self.__threads.append(t)
-            t.start()
-            self.__logger.info(f"Procedures calls on [tcp-{{self.__host}}:{{self.__CONNECTION_PORT}}].")
-            self.__logger.info(f"press Ctrl+C to stop.")
-            stop_event.wait()
+            self.__listner_thread = threading.Thread(target=self.__listner,name="SRPC Thread-Listener")
+            self.__listner_thread.start()
+            self.__logger.info(f"Procedure calls on [tcp-{{self.__host}}:{{self.__CONNECTION_PORT}}].")
+            self.__logger.info("Press Ctrl+C to stop.")
+            self.__stop_event.wait()
+
         except KeyboardInterrupt:
             self.stop()
+
         except Exception as e:
             self.__logger.error(f"An error occurred while starting the server stub: {{e}}")
-            self.__logger.error("Mission aborted.")
-            os._exit(1)
+            raise
 
     def stop(self):
-        self.__logger.info("Stopping stub...")
+        self.__logger.info("Stopping SRPC server...")
         self.__stop_event.set()
-        for t in self.__threads:
-            t.join()
-        self.__executor.shutdown(wait=True)
-        self.__logger.info("Stub successfully stopped.")
+
+        if self.__listner_thread is not None:
+            self.__listner_thread.join()
+
+        self.__handler_threads_pool.shutdown(wait=True)
+
+        self.__logger.info("Server successfully stopped.")
 
         """
         ).lstrip()
