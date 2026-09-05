@@ -98,10 +98,9 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
         self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
 
-        self.__handler_threads_pool = ThreadPoolExecutor(num_threads)
+        self.__handler_threads_pool = ThreadPoolExecutor(max_workers=num_threads)
 
         self.__listner_thread = None
-        self.__handler_threads_pool = ThreadPoolExecutor(max_workers=10)
         self.__stop_event = threading.Event()
         self.__serializer = SrpcSerializer()
         self.__lib_procs = {service_class_name}()
