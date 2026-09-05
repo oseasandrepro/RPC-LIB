@@ -169,7 +169,7 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
                 procedure_name = self.__proc_id_dic[request.proc_id]
 
-                self.__logger.info(f"Requested procedure {{procedure_name}} from: {{client_addr[0]}}")
+                # self.__logger.info(f"Requested procedure {{procedure_name}} from: {{client_addr[0]}}")
 
                 request.payload = srpcnetwork.recv_n(client_socket, request.payload_size)
                 if not request.payload:
