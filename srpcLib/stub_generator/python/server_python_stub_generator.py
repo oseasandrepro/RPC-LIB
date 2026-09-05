@@ -144,6 +144,21 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             return None
 
     def __handle_request(self, client_socket, client_addr):
+        try:
+            if not (self.__tls_config == None):
+                self.__ssl_context.minimum_version = self.__tls_config.minimum_tls_version
+                self.__ssl_context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
+                client_socket = self.__ssl_context.wrap_socket(client_socket, server_side=True)
+
+        except (ssl.SSLError, ssl.CertificateError) as e:
+            self.__logger.warning(f"Captured Requests SSL Error: {{e}}")
+            self.__logger.warning(f"From: {{client_addr}}")
+            client_socket.close()
+
+        except Exception as e:
+            self.__logger.error(f"An error occurred while TLS handshake for {{client_addr}}.: {{e}}")
+            client_socket.close()
+
         with client_socket:
             try:
                 #recive header
@@ -197,18 +212,9 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             while not self.__stop_event.is_set():
                 try:
                     client_socket, client_addr = listner_socket.accept()
-                    if self.__tls_config == None:
-                        self.__handler_threads_pool.submit(self.__handle_request, client_socket, client_addr)
-                    else:
-                        self.__ssl_context.minimum_version = self.__tls_config.minimum_tls_version
-                        self.__ssl_context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
-                        secure_client_socket = self.__ssl_context.wrap_socket(client_socket, server_side=True)
-                        self.__handler_threads_pool.submit(self.__handle_request, secure_client_socket, client_addr)
-
+                    self.__handler_threads_pool.submit(self.__handle_request, client_socket, client_addr)
                 except socket.timeout:
                     continue
-                except (ssl.SSLError, ssl.CertificateError) as e:
-                   self.__logger.warning(f"Captured Requests SSL Error: {{e}}")
                 except Exception as e:
                     self.__logger.error(f"An error occurred while listening for users requests in port [{{port}}]: {{e}}")
                     os._exit(1)
