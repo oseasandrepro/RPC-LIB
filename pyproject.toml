@@ -1,6 +1,6 @@
 [project]
 name = "srpcLib"
-version = "4.4.3"
+version = "4.4.4"
 description = "SRPC is an experimental RPC framework that uses Python as its Interface Definition Language"
 authors = [{ name="Oseas Andre", email="oseasandrepro@gmail.com" }]
 dependencies = ["msgpack==1.2.1", "mypy==2.3.0"]
