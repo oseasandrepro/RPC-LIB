@@ -116,6 +116,8 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
         self.__proc_id_dic : dict[int, str] = self.__get_proc_id_dic()
         self.__tls_config = tls_config
+        self.__ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+
 
     def __get_proc_id_dic(self):
         index:int = 0
@@ -198,10 +200,10 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     if self.__tls_config == None:
                         self.__handler_threads_pool.submit(self.__handle_request, client_socket, client_addr)
                     else:
-                        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-                        context.minimum_version = self.__tls_config.minimum_tls_version
-                        context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
-                        secure_client_socket = context.wrap_socket(client_socket, server_side=True)
+                        self.__ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                        self.__ssl_context.minimum_version = self.__tls_config.minimum_tls_version
+                        self.__ssl_context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
+                        secure_client_socket = self.__ssl_context.wrap_socket(client_socket, server_side=True)
                         self.__handler_threads_pool.submit(self.__handle_request, secure_client_socket, client_addr)
 
                 except socket.timeout:
