@@ -200,7 +200,6 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
                     if self.__tls_config == None:
                         self.__handler_threads_pool.submit(self.__handle_request, client_socket, client_addr)
                     else:
-                        self.__ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
                         self.__ssl_context.minimum_version = self.__tls_config.minimum_tls_version
                         self.__ssl_context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
                         secure_client_socket = self.__ssl_context.wrap_socket(client_socket, server_side=True)
