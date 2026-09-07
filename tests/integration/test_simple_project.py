@@ -6,8 +6,6 @@ from pathlib import Path
 
 import pytest
 
-from srpcLib.utils.srpc_network import get_lan_ip_or_localhost
-
 # Paths
 ROOT_DIR = Path(__file__).resolve().parents[2]  # rpc-lib/
 TEST_PROJECT = ROOT_DIR / "tests/integration/simple_project"
@@ -22,7 +20,8 @@ CLIENT_SCRIPT = "client.py"
 CLIENT_SCRIPT_DIVISION_BY_ZERO = "run_rpc_client_divizion_by_zero.py"
 
 # Network
-SERVER_HOST = get_lan_ip_or_localhost()
+# SERVER_HOST = get_lan_ip_or_localhost()
+SERVER_HOST = "127.0.0.1"
 SERVER_PORT = 5000
 
 
