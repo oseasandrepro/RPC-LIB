@@ -3,7 +3,6 @@ import textwrap
 
 from ...interface.srpc_stub_generator_interface import SrpcStubGeneratorInterface
 from ...utils.srpc_stub import (
-    DEFAULT_CONNECTION_PORT,
     LIB_NAME,
     get_service_interface_class_name,
     get_service_name,
@@ -89,14 +88,10 @@ from {service_name}.{service_name} import {service_class_name}
 from {service_name}.{service_name}_interface import {service_interface_class_name}
 
 class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
-    def __init__(self, tls_config: SrpcTLSConfig = None, host:str=None, num_threads = 8):
+    def __init__(self, tls_config: SrpcTLSConfig = None, host:str="127.0.0.1", port = 5000 ,num_threads = 8):
 
-        if host == None:
-            self.__host = srpcnetwork.get_lan_ip_or_localhost()
-        else:
-            self.__host = host
-
-        self.__CONNECTION_PORT = {DEFAULT_CONNECTION_PORT}
+        self.__host = host
+        self.__CONNECTION_PORT = port
 
         self.__handler_threads_pool = ThreadPoolExecutor(max_workers=num_threads)
 
