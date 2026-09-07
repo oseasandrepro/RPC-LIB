@@ -45,7 +45,7 @@ def install_lib():
     )
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="function")
 def generate_stubs():
     """
     Run the stub generator as a CLI tool inside test_project.
@@ -95,7 +95,7 @@ def generate_stubs():
     return TEST_PROJECT
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def server_process(generate_stubs, request):
     """
     Launch the server once for the entire test session.
