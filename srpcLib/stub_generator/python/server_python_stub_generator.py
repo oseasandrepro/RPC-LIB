@@ -110,7 +110,16 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
 
         self.__proc_id_dic : dict[int, str] = self.__get_proc_id_dic()
         self.__tls_config = tls_config
-        self.__ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+
+        self.__ssl_context = None
+        if self.__tls_config:
+            self.__ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            self.__ssl_context.minimum_version = self.__tls_config.minimum_tls_version
+            if self.__tls_config.certfile and self.__tls_config.keyfile:
+                self.__ssl_context.load_cert_chain(
+                    certfile=self.__tls_config.certfile,
+                    keyfile=self.__tls_config.keyfile
+                )
 
 
     def __get_proc_id_dic(self):
@@ -138,62 +147,55 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             return None
 
     def __handle_request(self, client_socket, client_addr):
-        try:
-            if not (self.__tls_config == None):
-                self.__ssl_context.minimum_version = self.__tls_config.minimum_tls_version
-                self.__ssl_context.load_cert_chain(certfile=self.__tls_config.certfile, keyfile=self.__tls_config.keyfile)
+        if self.__ssl_context:
+            try:
                 client_socket = self.__ssl_context.wrap_socket(client_socket, server_side=True)
+            except (ssl.SSLError, ssl.CertificateError) as e:
+                self.__logger.warning(f"Captured Requests SSL Error: {{e}} From: {{client_addr}}")
+                client_socket.close()
+                return  # Aborta a execução para não duplicar fechamentos de socket
+            except Exception as e:
+                self.__logger.error(f"An error occurred while TLS handshake for {{client_addr}}: {{e}}")
+                client_socket.close()
+                return
 
-        except (ssl.SSLError, ssl.CertificateError) as e:
-            self.__logger.warning(f"Captured Requests SSL Error: {{e}}")
-            self.__logger.warning(f"From: {{client_addr}}")
-            client_socket.close()
-
-        except Exception as e:
-            self.__logger.error(f"An error occurred while TLS handshake for {{client_addr}}.: {{e}}")
-            client_socket.close()
-
+        procedure_name = "Unknown"
         with client_socket:
             try:
-                #recive header
+                # Recebe cabeçalho
                 header_bytes = srpcnetwork.recv_n(client_socket, srpcnetwork.HEADER_SIZE)
+                if not header_bytes:
+                    return
+
                 request = srpcnetwork.Request.deserialize_header(header_bytes)
-
-                #check protocol version
-
                 procedure_name = self.__proc_id_dic[request.proc_id]
-
-                # self.__logger.info(f"Requested procedure {{procedure_name}} from: {{client_addr[0]}}")
 
                 request.payload = srpcnetwork.recv_n(client_socket, request.payload_size)
                 if not request.payload:
                     raise ValueError("Srpc: empty payload request")
 
-                # deserialize the list of parameters
                 proc_parameters_list = self.__serializer.deserialize(request.payload)
-
-                #Call procedure
                 result = self.__call_procedure(request.proc_id, proc_parameters_list)
 
-                # build response, payload=(msg, returned-value)
-                # 0 in response code mean sucess
-                response_payload = result
-                response_payload_bytes = self.__serializer.serialize(response_payload)
+                response_payload_bytes = self.__serializer.serialize(result)
                 response = srpcnetwork.Response(0, 0, len(response_payload_bytes), response_payload_bytes)
 
             except KeyError as e:
+                # Correção do bug do e.message (KeyError usa e.args ou str(e))
                 response_payload = "The service do not support the requested procedure"
                 response_payload_bytes = self.__serializer.serialize(response_payload)
                 response = srpcnetwork.Response(0, 1, len(response_payload_bytes), response_payload_bytes)
-                self.__logger.info(f"Procedure not suported: {{e.message}}")
+                self.__logger.warning(f"Procedure not supported: {{e}}")
             except Exception as e:
                 self.__logger.error(f"Procedure [{{procedure_name}}] call error: {{e}}")
                 response_payload = str(e)
                 response_payload_bytes = self.__serializer.serialize(response_payload)
                 response = srpcnetwork.Response(0, 2, len(response_payload_bytes), response_payload_bytes)
             finally:
-                client_socket.sendall( response.serialize())
-                client_socket.close()
+                try:
+                    client_socket.sendall(response.serialize())
+                except Exception as e:
+                    self.__logger.error(f"Failed to send response to {{client_addr}}: {{e}}")
 
     def __listner(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listner_socket:
@@ -219,17 +221,18 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             self.__listner_thread.start()
             self.__logger.info(f"Procedure calls on [tcp-{{self.__host}}:{{self.__CONNECTION_PORT}}].")
             self.__logger.info("Press Ctrl+C to stop.")
-            self.__stop_event.wait()
-
-        except KeyboardInterrupt:
-            self.stop()
 
         except Exception as e:
             self.__logger.error(f"An error occurred while starting the server stub: {{e}}")
             raise
 
     def stop(self):
+
+        if self.__stop_event.is_set():
+            return
+
         self.__logger.info("Stopping SRPC server...")
+
         self.__stop_event.set()
 
         if self.__listner_thread is not None:
