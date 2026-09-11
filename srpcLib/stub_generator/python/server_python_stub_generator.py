@@ -221,17 +221,18 @@ class Srpc{service_name.capitalize()}ServerStub(SrpcServerStubInterface):
             self.__listner_thread.start()
             self.__logger.info(f"Procedure calls on [tcp-{{self.__host}}:{{self.__CONNECTION_PORT}}].")
             self.__logger.info("Press Ctrl+C to stop.")
-            self.__stop_event.wait()
-
-        except KeyboardInterrupt:
-            self.stop()
 
         except Exception as e:
             self.__logger.error(f"An error occurred while starting the server stub: {{e}}")
             raise
 
     def stop(self):
+
+        if self.__stop_event.is_set():
+            return
+
         self.__logger.info("Stopping SRPC server...")
+
         self.__stop_event.set()
 
         if self.__listner_thread is not None:
